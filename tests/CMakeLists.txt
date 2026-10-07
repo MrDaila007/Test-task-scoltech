@@ -11,6 +11,7 @@ add_executable(fcstub_tests
     unit/setpoint_gate_test.cpp
     unit/command_dedup_test.cpp
     unit/dynamics_test.cpp
+    unit/faults_test.cpp
 )
 target_link_libraries(fcstub_tests PRIVATE
     fcstub_core fcstub_config fcstub_warnings fcstub_fp fcstub::mavlink GTest::gtest_main)

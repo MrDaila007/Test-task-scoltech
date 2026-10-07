@@ -4,6 +4,10 @@ add_library(fcstub_core STATIC
     core/battery.cpp
     core/command_dedup.cpp
     core/dynamics.cpp
+    core/estimator_tap.cpp
+    core/fault_schedule.cpp
+    core/fc_clock.cpp
+    core/lifecycle.cpp
     core/mav_codec.cpp
     core/mode_machine.cpp
     core/rng.cpp
