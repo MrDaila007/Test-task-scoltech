@@ -188,16 +188,16 @@ int RealtimeDriver::run(std::string& error) {
     if (!link.valid()) {
         return 3;
     }
-    // Everything the loop needs is allocated before memory is locked.
+    // Everything the loop needs is allocated before memory is locked: with
+    // MCL_FUTURE every later allocation counts against RLIMIT_MEMLOCK and can fail.
     auto core = std::make_unique<FcCore>(cfg_);
     std::vector<std::uint8_t> rx(kMaxLinkPacket + 1);
     HostInfo host = host_info();
+    const TimeNs t0 = monotonic_ns();
+    auto sink = std::make_unique<SocketSink>(link, *core, t0);
     sigset_t wait_mask;
     install_signals(wait_mask);
     enable_realtime(cfg_.realtime, host);
-
-    const TimeNs t0 = monotonic_ns();
-    auto sink = std::make_unique<SocketSink>(link, *core, t0);
     const TimeNs end = cfg_.run.duration_s > 0 ? seconds_to_ns(cfg_.run.duration_s)
                                                : std::numeric_limits<TimeNs>::max();
     const TimeNs spin = cfg_.realtime.spin_us * kNsPerUs;
@@ -226,6 +226,9 @@ int RealtimeDriver::run(std::string& error) {
         core->advance_to(now, *sink);
     }
 
+    if (host.mlockall) {
+        munlockall();  // the report below allocates; the real-time part is over
+    }
     const std::string report = build_report(host, ns_to_seconds(now), *sink, core->stats(), cfg_);
     if (cfg_.realtime.report_path.empty()) {
         std::fputs(report.c_str(), stderr);

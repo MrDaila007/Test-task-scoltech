@@ -83,3 +83,22 @@ TEST(Cli, SigtermStopsCleanlyAndWritesTheReport) {
     EXPECT_NE(json.find("\"jitter_ok\""), std::string::npos);
     EXPECT_NE(json.find("\"attitude\""), std::string::npos);
 }
+
+// Regression: with a memlock limit large enough for mlockall(MCL_CURRENT | MCL_FUTURE)
+// to succeed but too small for later allocations (8 MB is a common container
+// default), the stub must still run. It used to die with std::bad_alloc because
+// buffers were allocated after locking.
+TEST(Cli, RunsUnderAnEightMegabyteMemlockLimit) {
+    if (std::system("sh -c 'ulimit -S -l 8192' 2>/dev/null") != 0) {
+        GTEST_SKIP() << "hard memlock limit below 8 MB here";
+    }
+    const auto report = std::filesystem::temp_directory_path() / "fcstub_it_memlock.json";
+    std::filesystem::remove(report);
+    const auto cfg = temp_file(
+        "memlock.yaml", realtime_config(free_udp_port(), free_udp_port(), 1, report.string()));
+    const int status = std::system(("sh -c 'ulimit -S -l 8192 && exec " + kBinary + " --config " +
+                                    cfg.string() + "' 2>/dev/null")
+                                       .c_str());
+    EXPECT_EQ(WEXITSTATUS(status), 0);
+    EXPECT_TRUE(std::filesystem::exists(report));
+}
