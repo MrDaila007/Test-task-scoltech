@@ -1,0 +1,73 @@
+# fc_stub configuration, schema version 1.
+# Every key is optional except schema_version; omitted keys take the values shown here.
+# Unknown keys are rejected. The whole document may hold at most 200 scalar parameters
+# (every list element counts).
+
+schema_version: 1
+
+run:
+  mode: realtime          # realtime | sim (sim = model time, deterministic, needs duration_s > 0)
+  seed: 1                 # seeds every random stream (per-fault streams are derived from it)
+  duration_s: 0           # 0 = run until SIGINT/SIGTERM (realtime only)
+
+link:                     # MAVLink 2 over UDP, defaults mirror PX4 SITL's offboard link
+  bind_addr: 0.0.0.0
+  bind_port: 14580
+  remote_addr: 127.0.0.1
+  remote_port: 14540      # where MAVSDK / MAVROS listen by default
+  rx_max_frames_per_iter: 64
+  queue_capacity: 512     # frames per direction held by the link fault model
+
+identity:
+  system_id: 1
+  component_id: 1         # MAV_COMP_ID_AUTOPILOT1
+
+telemetry_hz:
+  heartbeat: 1
+  attitude: 50
+  global_position: 10
+  battery: 2
+
+modes:
+  ready_after_ms: 2000            # boot -> "ready" (STANDBY)
+  offboard_timeout_ms: 500        # no valid setpoint for longer than this in OFFBOARD -> HOLD
+  invalid_text_interval_ms: 1000  # rate limit for "setpoint rejected" STATUSTEXT
+
+vehicle:
+  origin:                 # local NED origin
+    lat_deg: 55.7558
+    lon_deg: 37.6173
+    alt_msl_m: 150
+  dt_ms: 4                # fixed model step (250 Hz)
+  tau_s: 0.3              # first-order velocity time constant
+  v_max_mps: 12
+  pos_gain: 1.0           # position setpoint -> velocity command gain, 1/s
+  geofence_m: 1000        # horizontal radius; setpoints outside are rejected
+  geofence_alt_m: 500
+
+battery:                  # 6S Li-ion
+  cells: 6
+  capacity_mah: 10000
+  r_int_ohm: 0.02
+  i_idle_a: 0.5           # disarmed
+  i_hover_a: 18           # armed, not moving
+  k_speed: 0.05           # extra current per (m/s)^2
+  soc_initial: 1.0
+
+realtime:
+  lock_memory: true       # mlockall; warning (not error) if not permitted
+  sched_fifo: true        # try SCHED_FIFO; warning (not error) if not permitted
+  priority: 80
+  spin_us: 0              # busy-wait this long before each deadline (trades CPU for jitter)
+  report_path: ""         # JSON jitter/traffic report; empty = stderr summary only
+
+sim:
+  out_dir: out            # frames.bin, truth.csv, sha256.txt
+  truth_csv_hz: 10        # 0 = do not write truth.csv
+
+# Fault injection; see config/scenarios/ for examples. Window: [start_s, start_s + duration_s),
+# duration_s 0 = until the end. Windows of the same type must not overlap.
+faults: []
+
+# Virtual client (sim mode only): commands, setpoint streams and TIMESYNC requests over time.
+client: []
