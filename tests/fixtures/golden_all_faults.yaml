@@ -1,0 +1,17 @@
+# Reference scenario: every fault type once, with a client flying in offboard.
+# Its SHA-256 is pinned in sim_driver_test.cpp; any change to the output stream
+# (telemetry content, timing, random draws) changes it.
+schema_version: 1
+run: {mode: sim, seed: 2026, duration_s: 60}
+faults:
+  - {type: link, start_s: 8, duration_s: 10, direction: both, p_good_to_bad: 0.05,
+     p_bad_to_good: 0.3, loss_good: 0.01, delay_ms: 80, jitter_ms: 60, byte_error_rate: 0.002}
+  - {type: gnss, kind: drift, start_s: 12, duration_s: 20, drift_mps: [0.3, 0.1, 0]}
+  - {type: estimator_freeze, start_s: 20, duration_s: 5}
+  - {type: clock_fault, start_s: 25, duration_s: 10, drift_ppm: 500, step_ms: 20}
+  - {type: fc_reboot, start_s: 40, boot_ms: 3000}
+client:
+  - {kind: command, at_s: 3, cmd: arm}
+  - {kind: setpoints, start_s: 3.5, end_s: 38, rate_hz: 20, frame: velocity, value: [1, 0.5, -1]}
+  - {kind: command, at_s: 4, cmd: offboard}
+  - {kind: timesync, start_s: 1, end_s: 59, rate_hz: 1}

@@ -18,6 +18,7 @@ add_library(fcstub_core STATIC
     core/scheduler.cpp
     core/setpoint_gate.cpp
     core/sha256.cpp
+    core/virtual_client.cpp
 )
 target_include_directories(fcstub_core PUBLIC ${PROJECT_SOURCE_DIR}/include)
 target_link_libraries(fcstub_core
@@ -34,3 +35,12 @@ target_include_directories(fcstub_config PUBLIC ${PROJECT_SOURCE_DIR}/include)
 target_link_libraries(fcstub_config
     PUBLIC yaml-cpp::yaml-cpp
     PRIVATE fcstub_warnings)
+
+# fcstub_runtime: OS-facing drivers (files, sockets, clocks) around the core.
+add_library(fcstub_runtime STATIC
+    runtime/sim_driver.cpp
+)
+target_include_directories(fcstub_runtime PUBLIC ${PROJECT_SOURCE_DIR}/include)
+target_link_libraries(fcstub_runtime
+    PUBLIC fcstub_core
+    PRIVATE fcstub_warnings fcstub_fp)

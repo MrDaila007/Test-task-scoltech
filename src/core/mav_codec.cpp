@@ -240,6 +240,45 @@ FrameBuf MavEncoder::timesync(const TimesyncData& d) noexcept {
     return to_frame(msg);
 }
 
+// --- client encoder ------------------------------------------------------------------
+
+MavClientEncoder::MavClientEncoder(std::uint8_t system_id, std::uint8_t component_id,
+                                   std::uint8_t target_system,
+                                   std::uint8_t target_component) noexcept
+    : system_id_(system_id),
+      component_id_(component_id),
+      target_system_(target_system),
+      target_component_(target_component) {
+    new (status_.data()) mavlink_status_t{};
+}
+
+FrameBuf MavClientEncoder::command_long(std::uint16_t command, const std::array<float, 7>& p,
+                                        std::uint8_t confirmation) noexcept {
+    mavlink_message_t msg{};
+    mavlink_msg_command_long_pack_status(system_id_, component_id_, as_status(status_), &msg,
+                                         target_system_, target_component_, command, confirmation,
+                                         p[0], p[1], p[2], p[3], p[4], p[5], p[6]);
+    return to_frame(msg);
+}
+
+FrameBuf MavClientEncoder::setpoint_local_ned(std::uint32_t time_boot_ms, std::uint16_t type_mask,
+                                              const std::array<float, 3>& pos,
+                                              const std::array<float, 3>& vel) noexcept {
+    mavlink_message_t msg{};
+    mavlink_msg_set_position_target_local_ned_pack_status(
+        system_id_, component_id_, as_status(status_), &msg, time_boot_ms, target_system_,
+        target_component_, MAV_FRAME_LOCAL_NED, type_mask, pos[0], pos[1], pos[2], vel[0], vel[1],
+        vel[2], 0.0F, 0.0F, 0.0F, 0.0F, 0.0F);
+    return to_frame(msg);
+}
+
+FrameBuf MavClientEncoder::timesync_request(std::int64_t ts1) noexcept {
+    mavlink_message_t msg{};
+    mavlink_msg_timesync_pack_status(system_id_, component_id_, as_status(status_), &msg, 0, ts1,
+                                     target_system_, target_component_);
+    return to_frame(msg);
+}
+
 // --- decoder -------------------------------------------------------------------------
 
 MavDecoder::MavDecoder() noexcept {

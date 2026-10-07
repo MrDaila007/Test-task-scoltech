@@ -14,9 +14,10 @@ add_executable(fcstub_tests
     unit/faults_test.cpp
     unit/link_model_test.cpp
     unit/fc_core_test.cpp
+    unit/sim_driver_test.cpp
 )
 target_link_libraries(fcstub_tests PRIVATE
-    fcstub_core fcstub_config fcstub_warnings fcstub_fp fcstub::mavlink GTest::gtest_main)
+    fcstub_runtime fcstub_core fcstub_config fcstub_warnings fcstub_fp fcstub::mavlink GTest::gtest_main)
 
 target_compile_definitions(fcstub_tests PRIVATE FCSTUB_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
 

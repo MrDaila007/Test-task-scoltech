@@ -120,6 +120,28 @@ private:
     alignas(8) std::array<unsigned char, 64> status_{};  // mavlink_status_t
 };
 
+// Encodes what an onboard computer sends to the autopilot (used by the virtual
+// client of the sim mode and by tests). Owns its own tx sequence like MavEncoder.
+class MavClientEncoder {
+public:
+    MavClientEncoder(std::uint8_t system_id, std::uint8_t component_id,
+                     std::uint8_t target_system, std::uint8_t target_component) noexcept;
+
+    FrameBuf command_long(std::uint16_t command, const std::array<float, 7>& params,
+                          std::uint8_t confirmation = 0) noexcept;
+    FrameBuf setpoint_local_ned(std::uint32_t time_boot_ms, std::uint16_t type_mask,
+                                const std::array<float, 3>& pos,
+                                const std::array<float, 3>& vel) noexcept;
+    FrameBuf timesync_request(std::int64_t ts1) noexcept;
+
+private:
+    std::uint8_t system_id_;
+    std::uint8_t component_id_;
+    std::uint8_t target_system_;
+    std::uint8_t target_component_;
+    alignas(8) std::array<unsigned char, 64> status_{};  // mavlink_status_t
+};
+
 // --- incoming messages ---------------------------------------------------------
 
 struct RxHeader {
