@@ -1,7 +1,9 @@
 # fcstub_core: OS-free deterministic core. No sockets, files or clocks here:
 # time and bytes are passed in by the drivers, frames are passed out through a sink.
 add_library(fcstub_core STATIC
+    core/battery.cpp
     core/command_dedup.cpp
+    core/dynamics.cpp
     core/mav_codec.cpp
     core/mode_machine.cpp
     core/rng.cpp

@@ -10,6 +10,7 @@ add_executable(fcstub_tests
     unit/mode_machine_test.cpp
     unit/setpoint_gate_test.cpp
     unit/command_dedup_test.cpp
+    unit/dynamics_test.cpp
 )
 target_link_libraries(fcstub_tests PRIVATE
     fcstub_core fcstub_config fcstub_warnings fcstub_fp fcstub::mavlink GTest::gtest_main)
