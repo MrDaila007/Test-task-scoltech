@@ -7,6 +7,9 @@ add_library(fcstub_core STATIC
     core/estimator_tap.cpp
     core/fault_schedule.cpp
     core/fc_clock.cpp
+    core/fc_core.cpp
+    core/fc_core_rx.cpp
+    core/fc_core_tx.cpp
     core/lifecycle.cpp
     core/link_model.cpp
     core/mav_codec.cpp

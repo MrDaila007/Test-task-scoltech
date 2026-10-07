@@ -27,8 +27,18 @@ namespace fcstub {
 
 inline constexpr std::size_t kMaxLinkPacket = 2048;
 
+// What a packet carries besides its bytes: which periodic stream it belongs to
+// (kNoStream for responses and status texts) and the deadline it was produced
+// for, so the real-time driver can measure send jitter per stream.
+struct PacketTag {
+    static constexpr std::uint8_t kNoStream = 0xFF;
+    std::uint8_t stream = kNoStream;
+    TimeNs deadline = 0;
+};
+
 struct LinkPacket {
     TimeNs release = 0;
+    PacketTag tag{};
     std::uint16_t len = 0;
     std::array<std::uint8_t, kMaxLinkPacket> data{};
 };
@@ -51,7 +61,7 @@ public:
 
     // `fault` and `rng` may be null for a clean link; `rng` must be the fault's stream.
     void push(TimeNs now, const std::uint8_t* data, std::size_t len, const LinkFaultParams* fault,
-              Rng* rng) noexcept;
+              Rng* rng, PacketTag tag = {}) noexcept;
 
     // Next packet released at or before `now`, in (release time, push order).
     bool pop_due(TimeNs now, LinkPacket& out) noexcept;
@@ -65,6 +75,7 @@ private:
         TimeNs release;
         std::uint64_t order;
         std::uint16_t slot;
+        PacketTag tag;
     };
 
     bool apply_fault(TimeNs now, const LinkFaultParams& f, Rng& rng, TimeNs& release) noexcept;

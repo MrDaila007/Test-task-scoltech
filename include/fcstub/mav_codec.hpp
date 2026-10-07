@@ -39,6 +39,20 @@ constexpr std::uint32_t px4_custom_mode(std::uint8_t main_mode, std::uint8_t sub
            (static_cast<std::uint32_t>(sub_mode) << 24U);
 }
 
+// MAVLink constants the core needs without including the MAVLink headers;
+// mav_codec.cpp checks every value against the library with static_assert.
+inline constexpr std::uint8_t kSeverityCritical = 2;  // MAV_SEVERITY_CRITICAL
+inline constexpr std::uint8_t kSeverityWarning = 4;   // MAV_SEVERITY_WARNING
+inline constexpr std::uint8_t kSeverityInfo = 6;      // MAV_SEVERITY_INFO
+inline constexpr std::uint8_t kStateUninit = 0;       // MAV_STATE_UNINIT
+inline constexpr std::uint8_t kStateBoot = 1;         // MAV_STATE_BOOT
+inline constexpr std::uint8_t kStateStandby = 3;      // MAV_STATE_STANDBY
+inline constexpr std::uint8_t kStateActive = 4;       // MAV_STATE_ACTIVE
+inline constexpr std::uint8_t kModeFlagCustomModeEnabled = 1;  // MAV_MODE_FLAG_CUSTOM_MODE_ENABLED
+inline constexpr std::uint8_t kModeFlagSafetyArmed = 128;      // MAV_MODE_FLAG_SAFETY_ARMED
+inline constexpr std::uint16_t kCmdComponentArmDisarm = 400;   // MAV_CMD_COMPONENT_ARM_DISARM
+inline constexpr std::uint16_t kCmdDoSetMode = 176;            // MAV_CMD_DO_SET_MODE
+
 // --- outgoing payloads, in engineering units; the encoder converts to wire units ---
 
 struct HeartbeatData {

@@ -14,6 +14,18 @@ static_assert(sizeof(mavlink_status_t) <= 64 && alignof(mavlink_status_t) <= 8,
               "status storage too small");
 static_assert(sizeof(mavlink_message_t) <= 320 && alignof(mavlink_message_t) <= 8,
               "message storage too small");
+static_assert(kSeverityCritical == MAV_SEVERITY_CRITICAL && kSeverityWarning == MAV_SEVERITY_WARNING &&
+                  kSeverityInfo == MAV_SEVERITY_INFO,
+              "severity constants");
+static_assert(kStateUninit == MAV_STATE_UNINIT && kStateBoot == MAV_STATE_BOOT &&
+                  kStateStandby == MAV_STATE_STANDBY && kStateActive == MAV_STATE_ACTIVE,
+              "MAV_STATE constants");
+static_assert(kModeFlagCustomModeEnabled == MAV_MODE_FLAG_CUSTOM_MODE_ENABLED &&
+                  kModeFlagSafetyArmed == MAV_MODE_FLAG_SAFETY_ARMED,
+              "mode flag constants");
+static_assert(kCmdComponentArmDisarm == MAV_CMD_COMPONENT_ARM_DISARM &&
+                  kCmdDoSetMode == MAV_CMD_DO_SET_MODE,
+              "command ids");
 static_assert(kMaxFrameLen >= MAVLINK_MAX_PACKET_LEN, "frame buffer must hold any MAVLink packet");
 
 namespace {

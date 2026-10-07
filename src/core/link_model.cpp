@@ -63,7 +63,7 @@ std::uint16_t LinkModel::acquire_slot() noexcept {
 }
 
 void LinkModel::push(TimeNs now, const std::uint8_t* data, std::size_t len,
-                     const LinkFaultParams* fault, Rng* rng) noexcept {
+                     const LinkFaultParams* fault, Rng* rng, PacketTag tag) noexcept {
     if (len > max_len_) {
         ++stats_.oversize;
         return;
@@ -89,7 +89,7 @@ void LinkModel::push(TimeNs now, const std::uint8_t* data, std::size_t len,
         }
         stats_.corrupted += flipped ? 1U : 0U;
     }
-    heap_.push_back(Entry{release, next_order_++, slot});
+    heap_.push_back(Entry{release, next_order_++, slot, tag});
     std::push_heap(heap_.begin(), heap_.end(), Later{});
 }
 
@@ -101,6 +101,7 @@ bool LinkModel::pop_due(TimeNs now, LinkPacket& out) noexcept {
     const Entry e = heap_.back();
     heap_.pop_back();
     out.release = e.release;
+    out.tag = e.tag;
     out.len = slot_len_[e.slot];
     std::memcpy(out.data.data(), slot_data(e.slot), out.len);
     std::memset(out.data.data() + out.len, 0, max_len_ - out.len);
