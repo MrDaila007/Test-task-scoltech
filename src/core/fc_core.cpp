@@ -199,7 +199,8 @@ void FcCore::advance_to(TimeNs now, FrameSink& sink) noexcept {
     stats_.downlink = downlink_.stats();
     stats_.missed_deadlines = 0;
     for (std::size_t i = 0; i < kStreamCount; ++i) {
-        stats_.missed_deadlines += scheduler_.missed(static_cast<Scheduler::TaskId>(i));
+        stats_.missed_per_stream[i] = scheduler_.missed(static_cast<Scheduler::TaskId>(i));
+        stats_.missed_deadlines += stats_.missed_per_stream[i];
     }
 }
 
@@ -213,6 +214,20 @@ TimeNs FcCore::next_deadline() const noexcept {
     next = std::min(next, downlink_.next_release());
     next = std::min(next, schedule_.next_boundary(now_));
     return std::max(next, now_ + 1);
+}
+
+const char* stream_name(Stream stream) noexcept {
+    switch (stream) {
+        case Stream::Heartbeat:
+            return "heartbeat";
+        case Stream::Attitude:
+            return "attitude";
+        case Stream::GlobalPosition:
+            return "global_position";
+        case Stream::Battery:
+            return "battery";
+    }
+    return "?";
 }
 
 FaultMask FcCore::active_faults(TimeNs now) const noexcept {

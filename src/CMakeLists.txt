@@ -38,9 +38,15 @@ target_link_libraries(fcstub_config
 
 # fcstub_runtime: OS-facing drivers (files, sockets, clocks) around the core.
 add_library(fcstub_runtime STATIC
+    runtime/jitter_stats.cpp
+    runtime/realtime_driver.cpp
     runtime/sim_driver.cpp
+    runtime/udp_link.cpp
 )
 target_include_directories(fcstub_runtime PUBLIC ${PROJECT_SOURCE_DIR}/include)
 target_link_libraries(fcstub_runtime
     PUBLIC fcstub_core
     PRIVATE fcstub_warnings fcstub_fp)
+
+add_executable(fc_stub app/main.cpp)
+target_link_libraries(fc_stub PRIVATE fcstub_runtime fcstub_config fcstub_warnings fcstub_fp)

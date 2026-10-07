@@ -32,3 +32,16 @@ if(NOT CMAKE_CXX_FLAGS MATCHES "-fsanitize")
         fcstub_core fcstub_warnings fcstub_fp fcstub::mavlink GTest::gtest_main)
     gtest_discover_tests(fcstub_noalloc_tests DISCOVERY_TIMEOUT 30)
 endif()
+
+# Integration tests run the real fc_stub binary (real time, UDP on loopback).
+# Label "integration": skip with `ctest -LE integration` where timing is unreliable.
+add_executable(fcstub_integration_tests
+    integration/cli_test.cpp
+    integration/udp_e2e_test.cpp
+)
+target_link_libraries(fcstub_integration_tests PRIVATE
+    fcstub_warnings fcstub::mavlink GTest::gtest_main)
+target_compile_definitions(fcstub_integration_tests PRIVATE
+    FCSTUB_BIN="$<TARGET_FILE:fc_stub>" FCSTUB_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+add_dependencies(fcstub_integration_tests fc_stub)
+gtest_discover_tests(fcstub_integration_tests DISCOVERY_TIMEOUT 30 PROPERTIES LABELS integration)

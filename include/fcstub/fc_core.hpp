@@ -30,6 +30,7 @@
 #include "fcstub/setpoint_gate.hpp"
 #include "fcstub/time.hpp"
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <string_view>
@@ -38,6 +39,8 @@ namespace fcstub {
 
 enum class Stream : std::uint8_t { Heartbeat = 0, Attitude = 1, GlobalPosition = 2, Battery = 3 };
 inline constexpr std::size_t kStreamCount = 4;
+
+const char* stream_name(Stream stream) noexcept;
 
 class FrameSink {
 public:
@@ -57,6 +60,7 @@ struct CoreStats {
     std::uint64_t tx_suppressed = 0;       // produced while rebooting
     std::uint64_t statustexts = 0;
     std::uint64_t missed_deadlines = 0;
+    std::array<std::uint64_t, 4> missed_per_stream{};  // indexed by Stream
     DecoderStats decoder;
     GateStats gate;
     LinkStats uplink;
