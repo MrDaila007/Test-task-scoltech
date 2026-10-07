@@ -1,0 +1,10 @@
+# F2: the autopilot reboots in flight (brown-out, watchdog): 3 s of silence, then a
+# fresh boot with time_boot_ms and MAVLink sequence numbers back at zero.
+schema_version: 1
+run: {mode: sim, seed: 7, duration_s: 60}
+faults:
+  - {type: fc_reboot, start_s: 30, boot_ms: 3000}
+client:
+  - {kind: command, at_s: 3, cmd: arm}
+  - {kind: setpoints, start_s: 3.5, end_s: 58, rate_hz: 20, frame: velocity, value: [2, 0, -0.5]}
+  - {kind: command, at_s: 4, cmd: offboard}

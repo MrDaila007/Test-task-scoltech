@@ -15,6 +15,8 @@ add_executable(fcstub_tests
     unit/link_model_test.cpp
     unit/fc_core_test.cpp
     unit/sim_driver_test.cpp
+    scenario/detectability_test.cpp
+    support/naive_detector.cpp
 )
 target_link_libraries(fcstub_tests PRIVATE
     fcstub_runtime fcstub_core fcstub_config fcstub_warnings fcstub_fp fcstub::mavlink GTest::gtest_main)

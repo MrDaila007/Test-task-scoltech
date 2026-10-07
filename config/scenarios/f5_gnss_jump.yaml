@@ -1,0 +1,10 @@
+# F5a: the GNSS position jumps by 16 m (multipath near the structure, RTK fix change).
+# Detectable: the jump is not explained by the reported velocity.
+schema_version: 1
+run: {mode: sim, seed: 7, duration_s: 60}
+faults:
+  - {type: gnss, kind: jump, start_s: 25, duration_s: 10, offset_m: [15, -5, 0]}
+client:
+  - {kind: command, at_s: 3, cmd: arm}
+  - {kind: setpoints, start_s: 3.5, end_s: 58, rate_hz: 20, frame: velocity, value: [2, 0, -0.5]}
+  - {kind: command, at_s: 4, cmd: offboard}

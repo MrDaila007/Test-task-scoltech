@@ -1,0 +1,12 @@
+# F4: telemetry link degradation for 10 s (motor EMI on the UART, USB buffer
+# overflow): bursty losses, delay with jitter (reordering) and corrupted bytes.
+schema_version: 1
+run: {mode: sim, seed: 7, duration_s: 60}
+faults:
+  - {type: link, start_s: 20, duration_s: 10, direction: down, p_good_to_bad: 0.02,
+     p_bad_to_good: 0.2, loss_good: 0.0, loss_bad: 1.0, delay_ms: 20, jitter_ms: 15,
+     byte_error_rate: 0.001}
+client:
+  - {kind: command, at_s: 3, cmd: arm}
+  - {kind: setpoints, start_s: 3.5, end_s: 58, rate_hz: 20, frame: velocity, value: [2, 0, -0.5]}
+  - {kind: command, at_s: 4, cmd: offboard}

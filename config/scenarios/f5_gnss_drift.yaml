@@ -1,0 +1,11 @@
+# F5b: slow GNSS drift (spoofing, multipath) consistent in position and velocity.
+# NOT detectable from autopilot telemetry alone; needs an independent source
+# (visual odometry, lidar) on the onboard computer.
+schema_version: 1
+run: {mode: sim, seed: 7, duration_s: 60}
+faults:
+  - {type: gnss, kind: drift, start_s: 10, duration_s: 0, drift_mps: [0.2, 0.1, 0]}
+client:
+  - {kind: command, at_s: 3, cmd: arm}
+  - {kind: setpoints, start_s: 3.5, end_s: 58, rate_hz: 20, frame: velocity, value: [2, 0, -0.5]}
+  - {kind: command, at_s: 4, cmd: offboard}

@@ -1,0 +1,11 @@
+# F1, worst case: the whole estimate (velocity too) freezes while the vehicle hovers.
+# A frozen hover looks exactly like a good hover: NOT detectable by telemetry checks.
+schema_version: 1
+run: {mode: sim, seed: 7, duration_s: 60}
+faults:
+  - {type: estimator_freeze, start_s: 20, duration_s: 10, freeze_velocity: true}
+client:
+  - {kind: command, at_s: 3, cmd: arm}
+  - {kind: setpoints, start_s: 3.5, end_s: 10, rate_hz: 20, frame: velocity, value: [0, 0, -1]}
+  - {kind: setpoints, start_s: 10, end_s: 58, rate_hz: 20, frame: velocity, value: [0, 0, 0]}
+  - {kind: command, at_s: 4, cmd: offboard}

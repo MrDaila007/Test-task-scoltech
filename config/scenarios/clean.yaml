@@ -1,0 +1,7 @@
+# Baseline: no faults. The reference detector must raise no alarm here.
+schema_version: 1
+run: {mode: sim, seed: 7, duration_s: 60}
+client:
+  - {kind: command, at_s: 3, cmd: arm}
+  - {kind: setpoints, start_s: 3.5, end_s: 58, rate_hz: 20, frame: velocity, value: [2, 0, -0.5]}
+  - {kind: command, at_s: 4, cmd: offboard}

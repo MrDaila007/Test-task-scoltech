@@ -1,0 +1,10 @@
+# F3: the autopilot clock drifts by 100 ppm (cheap crystal, clock source switch).
+# Without TIMESYNC on the onboard side this is invisible.
+schema_version: 1
+run: {mode: sim, seed: 7, duration_s: 80}
+faults:
+  - {type: clock_fault, start_s: 10, duration_s: 60, drift_ppm: 100}
+client:
+  - {kind: command, at_s: 3, cmd: arm}
+  - {kind: setpoints, start_s: 3.5, end_s: 78, rate_hz: 20, frame: velocity, value: [2, 0, -0.5]}
+  - {kind: command, at_s: 4, cmd: offboard}
