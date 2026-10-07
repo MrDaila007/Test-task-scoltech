@@ -1,9 +1,12 @@
 # fcstub_core: OS-free deterministic core. No sockets, files or clocks here:
 # time and bytes are passed in by the drivers, frames are passed out through a sink.
 add_library(fcstub_core STATIC
+    core/command_dedup.cpp
+    core/mav_codec.cpp
+    core/mode_machine.cpp
     core/rng.cpp
     core/scheduler.cpp
-    core/mav_codec.cpp
+    core/setpoint_gate.cpp
     core/sha256.cpp
 )
 target_include_directories(fcstub_core PUBLIC ${PROJECT_SOURCE_DIR}/include)
