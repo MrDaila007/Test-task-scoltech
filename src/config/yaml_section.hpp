@@ -100,9 +100,9 @@ void Section::enumeration(const char* key, E& out, const EnumNames<E>& names) {
     if (!has(key)) {
         return;
     }
-    for (const auto& [name, e] : names) {
-        if (value == name) {
-            out = e;
+    for (const auto& entry : names) {
+        if (value == entry.first) {
+            out = entry.second;
             return;
         }
     }

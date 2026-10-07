@@ -65,7 +65,7 @@ HostInfo host_info() {
     return h;
 }
 
-class SocketSink : public FrameSink {
+class SocketSink final : public FrameSink {
 public:
     SocketSink(UdpLink& link, const FcCore& core, TimeNs t0) : link_(link), core_(core), t0_(t0) {}
 

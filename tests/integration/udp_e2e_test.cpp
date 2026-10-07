@@ -133,12 +133,14 @@ TEST(UdpE2E, ArmOffboardAndHoldOnSetpointLoss) {
     ASSERT_NE(fc_port, 0);
     UdpClient client(fc_port);
     ASSERT_NE(client.port(), 0);
-    const auto cfg =
-        temp_file("e2e.yaml",
-                  "schema_version: 1\nrun: {duration_s: 15}\nlink: {bind_addr: 127.0.0.1, "
-                  "bind_port: " +
-                      std::to_string(fc_port) + ", remote_port: " + std::to_string(client.port()) +
-                      "}\nrealtime: {sched_fifo: false}\n");
+    const auto cfg = temp_file(
+        "e2e.yaml",
+        "schema_version: 1\nrun: {duration_s: 15}\nlink: {bind_addr: 127.0.0.1, "
+        "bind_port: " +
+            std::to_string(fc_port) + ", remote_port: " + std::to_string(client.port()) +
+            "}\nrealtime: {sched_fifo: false, report_path: \"" +
+            (std::filesystem::temp_directory_path() / "fcstub_it_e2e_report.json").string() +
+            "\"}\n");
     Child fc({"--config", cfg.string()});
 
     // Telemetry rate on the receiving side over 3 s.

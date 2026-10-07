@@ -6,13 +6,20 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 what="${1:-all}"
 
+log_dir="out/verify"
+mkdir -p "${log_dir}"
+
 build() {  # name, docker build args...
     local name="$1"; shift
+    local log="${log_dir}/$(echo "${name}" | tr -c 'a-zA-Z0-9.' '_').log"
     echo "=== ${name}"
-    if git archive --format=tar HEAD | docker build -q -f docker/Dockerfile "$@" - >/dev/null; then
-        echo "PASS ${name}"
+    if git archive --format=tar HEAD |
+        docker build --progress=plain --no-cache -f docker/Dockerfile "$@" - >"${log}" 2>&1; then
+        echo "PASS ${name}  ($(grep -o '[0-9]*% tests passed.*' "${log}" | tail -1))"
     else
-        echo "FAIL ${name}"; return 1
+        echo "FAIL ${name}  (log: ${log})"
+        grep -E 'tests failed|\*\*\*Failed|Failure|Which is' "${log}" | head -20
+        return 1
     fi
 }
 

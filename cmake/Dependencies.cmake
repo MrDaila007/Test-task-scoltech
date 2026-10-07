@@ -41,6 +41,12 @@ endif()
 if(NOT TARGET yaml-cpp::yaml-cpp)
     add_library(yaml-cpp::yaml-cpp ALIAS yaml-cpp)
 endif()
+if(NOT FCSTUB_USE_SYSTEM_DEPS)
+    # Consumers see yaml-cpp's headers as system headers, so our -Werror warning set
+    # (e.g. clang's -Wshadow) does not fire inside third-party code.
+    set_target_properties(yaml-cpp PROPERTIES INTERFACE_SYSTEM_INCLUDE_DIRECTORIES
+        "$<TARGET_PROPERTY:yaml-cpp,INTERFACE_INCLUDE_DIRECTORIES>")
+endif()
 
 # --- GoogleTest --------------------------------------------------------------
 if(FCSTUB_BUILD_TESTS)

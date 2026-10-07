@@ -27,7 +27,7 @@ void put_le(std::string& out, T value) {
     }
 }
 
-class Recorder : public FrameSink, public ClientSink {
+class Recorder final : public FrameSink, public ClientSink {
 public:
     Recorder(FcCore& core, std::ofstream& journal) : core_(core), journal_(journal) {}
 

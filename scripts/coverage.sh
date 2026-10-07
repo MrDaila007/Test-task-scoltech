@@ -5,4 +5,4 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 ./scripts/build_and_test.sh coverage
 gcovr --root . --filter 'src/' --exclude 'src/app/' build/coverage \
-      --print-summary --fail-under-line 80 --txt-metric line --txt
+      --print-summary --fail-under-line 80

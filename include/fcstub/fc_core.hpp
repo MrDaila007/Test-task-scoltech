@@ -70,7 +70,7 @@ struct CoreStats {
 // Bit i set = fault type i active (EstimatorFreeze=0 ... Gnss=4).
 using FaultMask = std::uint32_t;
 
-class FcCore : private RxHandler {
+class FcCore final : private RxHandler {
 public:
     explicit FcCore(const Config& cfg);
     FcCore(const FcCore&) = delete;
