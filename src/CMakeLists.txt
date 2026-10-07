@@ -8,6 +8,7 @@ add_library(fcstub_core STATIC
     core/fault_schedule.cpp
     core/fc_clock.cpp
     core/lifecycle.cpp
+    core/link_model.cpp
     core/mav_codec.cpp
     core/mode_machine.cpp
     core/rng.cpp
