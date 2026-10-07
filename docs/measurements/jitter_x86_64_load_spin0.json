@@ -1,0 +1,13 @@
+{
+  "host": {"kernel": "6.8.0-138-generic", "arch": "x86_64", "governor": "powersave", "sched_fifo": false, "mlockall": true},
+  "duration_s": 60.000,
+  "streams": {
+    "heartbeat": {"period_us": 1000000, "n": 61, "err_us": {"p50": 20, "p99": 1020, "max": 1019.9}, "missed": 0},
+    "attitude": {"period_us": 20000, "n": 3001, "err_us": {"p50": 17, "p99": 2017, "max": 5014.5}, "missed": 0},
+    "global_position": {"period_us": 100000, "n": 601, "err_us": {"p50": 37, "p99": 2044, "max": 3073.0}, "missed": 0},
+    "battery": {"period_us": 500000, "n": 121, "err_us": {"p50": 50, "p99": 1034, "max": 1056.6}, "missed": 0}
+  },
+  "rx": {"datagrams": 0, "frames": 0, "crc_errors": 0, "setpoints_rejected": 0},
+  "tx": {"frames": 3786, "send_errors": 0},
+  "jitter_ok": false
+}
