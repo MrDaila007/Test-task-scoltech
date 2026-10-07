@@ -25,6 +25,8 @@ target_compile_options(fcstub_fp INTERFACE -ffp-contract=off)
 
 include(cmake/Dependencies.cmake)
 
+add_subdirectory(src)
+
 if(FCSTUB_BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
