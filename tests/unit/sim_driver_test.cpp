@@ -1,5 +1,5 @@
-#include "fcstub/config_loader.hpp"
 #include "fcstub/sim_driver.hpp"
+#include "fcstub/config_loader.hpp"
 #include "fcstub/virtual_client.hpp"
 
 #include <common/mavlink.h>
@@ -152,7 +152,8 @@ TEST(SimDriver, TruthCsvRowsAndHeader) {
 TEST(SimDriver, SameSeedSameHash) {
     const std::string yaml = with_faults(
         "  - {type: link, start_s: 5, duration_s: 10, direction: both, p_good_to_bad: 0.05,"
-        " p_bad_to_good: 0.3, loss_good: 0.01, delay_ms: 50, jitter_ms: 40, byte_error_rate: 0.001}\n");
+        " p_bad_to_good: 0.3, loss_good: 0.01, delay_ms: 50, jitter_ms: 40, byte_error_rate: "
+        "0.001}\n");
     EXPECT_EQ(run_sim(yaml, "a").sha256, run_sim(yaml, "b").sha256);
 }
 
@@ -201,7 +202,8 @@ TEST(SimDriver, FaultStreamsAreIndependent) {
 // Pinned on x86_64 (g++ 11.4, -ffp-contract=off). The same value is expected on
 // aarch64; a deliberate change to the output stream must update it.
 TEST(SimDriver, GoldenScenarioHash) {
-    Config cfg = load_config(std::string(FCSTUB_SOURCE_DIR) + "/tests/fixtures/golden_all_faults.yaml");
+    Config cfg =
+        load_config(std::string(FCSTUB_SOURCE_DIR) + "/tests/fixtures/golden_all_faults.yaml");
     cfg.sim.out_dir = fresh_dir("golden").string();
     const SimResult res = SimDriver(cfg).run();
     EXPECT_EQ(res.sha256, "4705f2d9a96716391717d09b1e2bc4787af82e7a393670aa4a51656f1044ab2d");

@@ -19,7 +19,14 @@
 
 namespace fcstub::test {
 
-enum class Alarm { HeartbeatTimeout, TimeRegression, SequenceGap, FrozenPosition, PositionJump, ClockDrift };
+enum class Alarm {
+    HeartbeatTimeout,
+    TimeRegression,
+    SequenceGap,
+    FrozenPosition,
+    PositionJump,
+    ClockDrift
+};
 
 struct AlarmEvent {
     double t_s;

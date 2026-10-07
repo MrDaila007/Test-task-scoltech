@@ -30,8 +30,8 @@ public:
     static constexpr std::uint8_t kSystemId = 255;
     static constexpr std::uint8_t kComponentId = 190;
 
-    explicit VirtualClient(const std::vector<ClientAction>& actions,
-                           std::uint8_t target_system = 1, std::uint8_t target_component = 1);
+    explicit VirtualClient(const std::vector<ClientAction>& actions, std::uint8_t target_system = 1,
+                           std::uint8_t target_component = 1);
 
     TimeNs next_event() const noexcept;
 

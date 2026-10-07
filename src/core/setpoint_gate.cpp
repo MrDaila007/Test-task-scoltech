@@ -37,7 +37,7 @@ bool uses_velocity(SetpointKind k) noexcept { return k != SetpointKind::Position
 
 }  // namespace
 
-SetpointGate::SetpointGate(GateLimits limits) noexcept : limits_(limits) {}
+SetpointGate::SetpointGate(const GateLimits& limits) noexcept : limits_(limits) {}
 
 void SetpointGate::reset() noexcept {
     last_ = Setpoint{};
@@ -71,9 +71,8 @@ RejectReason SetpointGate::classify(const SetpointMsg& m, Setpoint& sp) const no
     if (uses_velocity(sp.kind) && std::hypot(sp.vel[0], sp.vel[1], sp.vel[2]) > limits_.v_max_mps) {
         return RejectReason::Range;
     }
-    if (uses_position(sp.kind) &&
-        (std::hypot(sp.pos[0], sp.pos[1]) > limits_.geofence_m || sp.pos[2] > 0.0 ||
-         sp.pos[2] < -limits_.geofence_alt_m)) {
+    if (uses_position(sp.kind) && (std::hypot(sp.pos[0], sp.pos[1]) > limits_.geofence_m ||
+                                   sp.pos[2] > 0.0 || sp.pos[2] < -limits_.geofence_alt_m)) {
         return RejectReason::Range;
     }
     return RejectReason::None;

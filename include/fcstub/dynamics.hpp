@@ -26,10 +26,10 @@ struct MotionTarget {
 };
 
 struct VehicleState {
-    Vec3 pos{};    // m, NED
-    Vec3 vel{};    // m/s, NED
-    Vec3 accel{};  // m/s^2, NED, over the last step
-    double roll = 0.0, pitch = 0.0, yaw = 0.0;                  // rad
+    Vec3 pos{};                                                // m, NED
+    Vec3 vel{};                                                // m/s, NED
+    Vec3 accel{};                                              // m/s^2, NED, over the last step
+    double roll = 0.0, pitch = 0.0, yaw = 0.0;                 // rad
     double roll_rate = 0.0, pitch_rate = 0.0, yaw_rate = 0.0;  // rad/s
 };
 
@@ -41,7 +41,7 @@ struct DynamicsParams {
 
 class Dynamics {
 public:
-    explicit Dynamics(DynamicsParams params) noexcept;
+    explicit Dynamics(const DynamicsParams& params) noexcept;
 
     void step(double dt, const MotionTarget& target) noexcept;
 

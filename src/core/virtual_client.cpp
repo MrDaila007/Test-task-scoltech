@@ -88,10 +88,9 @@ void VirtualClient::emit(TimeNs t, ClientSink& sink) noexcept {
         sink.send(t, frame.data.data(), frame.len);
         ++track.count;
         // Grid from the start time, so rounding of the period never accumulates.
-        track.next = track.period == 0
-                         ? track.end
-                         : seconds_to_ns(track.action.start_s) +
-                               static_cast<TimeNs>(track.count) * track.period;
+        track.next = track.period == 0 ? track.end
+                                       : seconds_to_ns(track.action.start_s) +
+                                             static_cast<TimeNs>(track.count) * track.period;
     }
 }
 

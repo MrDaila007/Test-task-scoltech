@@ -8,9 +8,9 @@
 namespace {
 
 using namespace fcstub;
+using fcstub::test::base_config;
 using fcstub::test::Harness;
 using fcstub::test::Received;
-using fcstub::test::base_config;
 
 constexpr TimeNs kS = kNsPerS;
 constexpr TimeNs kMs = kNsPerMs;

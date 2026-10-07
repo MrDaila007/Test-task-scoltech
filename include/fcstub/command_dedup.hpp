@@ -19,8 +19,8 @@ struct CommandKey {
     std::uint16_t command;
 
     bool operator==(const CommandKey& other) const noexcept {
-        return source_system == other.source_system &&
-               source_component == other.source_component && command == other.command;
+        return source_system == other.source_system && source_component == other.source_component &&
+               command == other.command;
     }
 };
 

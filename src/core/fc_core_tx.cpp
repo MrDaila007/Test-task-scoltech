@@ -66,15 +66,15 @@ void FcCore::emit_telemetry(Stream stream, TimeNs deadline) noexcept {
             send(encoder_.heartbeat(heartbeat_data()), tag);
             break;
         case Stream::Attitude:
-            send(encoder_.attitude({boot_ms, static_cast<float>(est.roll),
-                                    static_cast<float>(est.pitch), static_cast<float>(est.yaw),
-                                    static_cast<float>(est.roll_rate),
-                                    static_cast<float>(est.pitch_rate),
-                                    static_cast<float>(est.yaw_rate)}),
+            send(encoder_.attitude(
+                     {boot_ms, static_cast<float>(est.roll), static_cast<float>(est.pitch),
+                      static_cast<float>(est.yaw), static_cast<float>(est.roll_rate),
+                      static_cast<float>(est.pitch_rate), static_cast<float>(est.yaw_rate)}),
                  tag);
             break;
         case Stream::GlobalPosition: {
-            const GeoPoint geo = ned_to_wgs84(cfg_.vehicle.origin, est.pos[0], est.pos[1], est.pos[2]);
+            const GeoPoint geo =
+                ned_to_wgs84(cfg_.vehicle.origin, est.pos[0], est.pos[1], est.pos[2]);
             send(encoder_.global_position_int({boot_ms, geo.lat_deg, geo.lon_deg, geo.alt_msl_m,
                                                -est.pos[2], est.vel[0], est.vel[1], est.vel[2],
                                                est.yaw}),

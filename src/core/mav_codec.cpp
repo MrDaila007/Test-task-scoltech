@@ -14,8 +14,8 @@ static_assert(sizeof(mavlink_status_t) <= 64 && alignof(mavlink_status_t) <= 8,
               "status storage too small");
 static_assert(sizeof(mavlink_message_t) <= 320 && alignof(mavlink_message_t) <= 8,
               "message storage too small");
-static_assert(kSeverityCritical == MAV_SEVERITY_CRITICAL && kSeverityWarning == MAV_SEVERITY_WARNING &&
-                  kSeverityInfo == MAV_SEVERITY_INFO,
+static_assert(kSeverityCritical == MAV_SEVERITY_CRITICAL &&
+                  kSeverityWarning == MAV_SEVERITY_WARNING && kSeverityInfo == MAV_SEVERITY_INFO,
               "severity constants");
 static_assert(kStateUninit == MAV_STATE_UNINIT && kStateBoot == MAV_STATE_BOOT &&
                   kStateStandby == MAV_STATE_STANDBY && kStateActive == MAV_STATE_ACTIVE,
@@ -292,7 +292,8 @@ void MavDecoder::feed(const std::uint8_t* data, std::size_t len, RxHandler& hand
     mavlink_message_t msg{};
     mavlink_status_t msg_status{};
     for (std::size_t i = 0; i < len; ++i) {
-        const std::uint8_t result = mavlink_frame_char_buffer(rx, status, data[i], &msg, &msg_status);
+        const std::uint8_t result =
+            mavlink_frame_char_buffer(rx, status, data[i], &msg, &msg_status);
         if (result == MAVLINK_FRAMING_OK) {
             ++stats_.frames_ok;
             handler.on_message(decode(msg));

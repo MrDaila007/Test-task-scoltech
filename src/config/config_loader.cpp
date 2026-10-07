@@ -21,8 +21,8 @@ using detail::EnumNames;
 using detail::Section;
 
 void parse_run(Section s, RunConfig& run) {
-    s.enumeration("mode", run.mode, EnumNames<RunMode>{{"realtime", RunMode::Realtime},
-                                                       {"sim", RunMode::Sim}});
+    s.enumeration("mode", run.mode,
+                  EnumNames<RunMode>{{"realtime", RunMode::Realtime}, {"sim", RunMode::Sim}});
     s.number("seed", run.seed, std::uint64_t{0}, std::numeric_limits<std::uint64_t>::max());
     s.number("duration_s", run.duration_s, 0.0, 86400.0);
     s.finish();
@@ -197,7 +197,9 @@ Config load_config(const std::string& path) { return parse_document(parse_yaml_f
 
 Config load_config_from_string(const std::string& yaml) { return parse_document(parse_yaml(yaml)); }
 
-std::size_t count_leaf_params(const std::string& path) { return count_leaves(parse_yaml_file(path)); }
+std::size_t count_leaf_params(const std::string& path) {
+    return count_leaves(parse_yaml_file(path));
+}
 
 std::size_t count_leaf_params_in_string(const std::string& yaml) {
     return count_leaves(parse_yaml(yaml));

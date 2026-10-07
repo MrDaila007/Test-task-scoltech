@@ -1,5 +1,5 @@
-#include "fcstub/battery.hpp"
 #include "fcstub/dynamics.hpp"
+#include "fcstub/battery.hpp"
 #include "fcstub/geo.hpp"
 
 #include <gtest/gtest.h>

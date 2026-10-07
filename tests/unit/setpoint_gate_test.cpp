@@ -7,11 +7,11 @@
 
 namespace {
 
+using fcstub::kNsPerMs;
 using fcstub::RejectReason;
 using fcstub::SetpointGate;
 using fcstub::SetpointKind;
 using fcstub::SetpointMsg;
-using fcstub::kNsPerMs;
 
 constexpr std::uint16_t kVelocityOnly = 3527;
 constexpr std::uint16_t kPositionOnly = 3576;
@@ -69,7 +69,7 @@ TEST(SetpointGate, RejectsUnsupportedMasks) {
     SetpointGate g = make_gate();
     EXPECT_EQ(g.submit(0, msg(0)).reason, RejectReason::TypeMask);  // acceleration used
     EXPECT_EQ(g.submit(0, msg(kVelocityOnly | 512U)).reason, RejectReason::TypeMask);  // force
-    EXPECT_EQ(g.submit(0, msg(kVelocityOnly | 8U)).reason, RejectReason::TypeMask);  // half vel
+    EXPECT_EQ(g.submit(0, msg(kVelocityOnly | 8U)).reason, RejectReason::TypeMask);    // half vel
     EXPECT_EQ(g.stats().rejected[static_cast<int>(RejectReason::TypeMask)], 3U);
 }
 
@@ -86,7 +86,7 @@ TEST(SetpointGate, NonFiniteOnlyMattersInUsedFields) {
     m.vx = kNaN;
     EXPECT_EQ(g.submit(0, m).reason, RejectReason::NonFinite);
     m = msg(kVelocityOnly);
-    m.x = kNaN;  // position is ignored by this mask
+    m.x = kNaN;    // position is ignored by this mask
     m.yaw = kNaN;  // yaw ignored too
     EXPECT_EQ(g.submit(0, m).reason, RejectReason::None);
     m = msg(kVelocityOnly & ~1024U);

@@ -112,7 +112,8 @@ private:
 };
 
 bool is_ack(const mavlink_message_t& m, std::uint16_t cmd, std::uint8_t result) {
-    return m.msgid == MAVLINK_MSG_ID_COMMAND_ACK && mavlink_msg_command_ack_get_command(&m) == cmd &&
+    return m.msgid == MAVLINK_MSG_ID_COMMAND_ACK &&
+           mavlink_msg_command_ack_get_command(&m) == cmd &&
            mavlink_msg_command_ack_get_result(&m) == result;
 }
 
@@ -132,16 +133,17 @@ TEST(UdpE2E, ArmOffboardAndHoldOnSetpointLoss) {
     ASSERT_NE(fc_port, 0);
     UdpClient client(fc_port);
     ASSERT_NE(client.port(), 0);
-    const auto cfg = temp_file(
-        "e2e.yaml", "schema_version: 1\nrun: {duration_s: 15}\nlink: {bind_addr: 127.0.0.1, "
-                    "bind_port: " + std::to_string(fc_port) + ", remote_port: " +
-                        std::to_string(client.port()) + "}\nrealtime: {sched_fifo: false}\n");
+    const auto cfg =
+        temp_file("e2e.yaml",
+                  "schema_version: 1\nrun: {duration_s: 15}\nlink: {bind_addr: 127.0.0.1, "
+                  "bind_port: " +
+                      std::to_string(fc_port) + ", remote_port: " + std::to_string(client.port()) +
+                      "}\nrealtime: {sched_fifo: false}\n");
     Child fc({"--config", cfg.string()});
 
     // Telemetry rate on the receiving side over 3 s.
-    ASSERT_TRUE(client.wait_for(std::chrono::seconds(3), [](const auto& m) {
-        return m.msgid == MAVLINK_MSG_ID_HEARTBEAT;
-    }));
+    ASSERT_TRUE(client.wait_for(std::chrono::seconds(3),
+                                [](const auto& m) { return m.msgid == MAVLINK_MSG_ID_HEARTBEAT; }));
     const int attitude = client.count(MAVLINK_MSG_ID_ATTITUDE, std::chrono::seconds(3));
     EXPECT_NEAR(attitude, 150, 3);
 
@@ -160,10 +162,10 @@ TEST(UdpE2E, ArmOffboardAndHoldOnSetpointLoss) {
     bool offboard_acked = false;
     for (int i = 0; i < 20; ++i) {
         client.velocity(1);
-        offboard_acked = offboard_acked ||
-                         client.wait_for(std::chrono::milliseconds(50), [](const auto& m) {
-                             return is_ack(m, MAV_CMD_DO_SET_MODE, MAV_RESULT_ACCEPTED);
-                         });
+        offboard_acked =
+            offboard_acked || client.wait_for(std::chrono::milliseconds(50), [](const auto& m) {
+                return is_ack(m, MAV_CMD_DO_SET_MODE, MAV_RESULT_ACCEPTED);
+            });
     }
     ASSERT_TRUE(offboard_acked);
 
@@ -173,7 +175,8 @@ TEST(UdpE2E, ArmOffboardAndHoldOnSetpointLoss) {
     ASSERT_TRUE(client.wait_for(std::chrono::seconds(2), [](const auto& m) {
         return is_text(m, "Offboard lost >500ms: HOLD");
     }));
-    const auto delay = std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now() - last_setpoint);
+    const auto delay =
+        std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now() - last_setpoint);
     EXPECT_GE(delay.count(), 500);
     EXPECT_LE(delay.count(), 650);
     EXPECT_TRUE(client.wait_for(std::chrono::seconds(2), [](const auto& m) {

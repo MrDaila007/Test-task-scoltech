@@ -35,7 +35,8 @@ std::string describe(const std::vector<AlarmEvent>& alarms) {
 }
 
 ScenarioRun run_scenario(const std::string& name) {
-    Config cfg = load_config(std::string(FCSTUB_SOURCE_DIR) + "/config/scenarios/" + name + ".yaml");
+    Config cfg =
+        load_config(std::string(FCSTUB_SOURCE_DIR) + "/config/scenarios/" + name + ".yaml");
     cfg.sim.out_dir = (fs::temp_directory_path() / ("fcstub_scn_" + name)).string();
     fs::remove_all(cfg.sim.out_dir);
     (void)SimDriver(cfg).run();

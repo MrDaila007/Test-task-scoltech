@@ -15,9 +15,9 @@ namespace {
 
 constexpr double kHeartbeatTimeoutS = 2.5;
 constexpr double kFrozenWindowS = 1.0;
-constexpr double kFrozenSpeed = 0.5;    // m/s
-constexpr double kJumpResidual = 2.0;   // m
-constexpr double kDriftLimitNs = 5e6;   // 5 ms
+constexpr double kFrozenSpeed = 0.5;   // m/s
+constexpr double kJumpResidual = 2.0;  // m
+constexpr double kDriftLimitNs = 5e6;  // 5 ms
 constexpr int kGapsPerSecond = 3;
 constexpr double kMetresPerDegLat = 111195.0;
 
@@ -107,7 +107,8 @@ private:
 
     void check_jump(const PositionFix& a, const PositionFix& b) {
         const double dn = (b.lat - a.lat) * 1e-7 * kMetresPerDegLat;
-        const double de = (b.lon - a.lon) * 1e-7 * kMetresPerDegLat * std::cos(b.lat * 1e-7 * M_PI / 180);
+        const double de =
+            (b.lon - a.lon) * 1e-7 * kMetresPerDegLat * std::cos(b.lat * 1e-7 * M_PI / 180);
         const double dt = b.t - a.t;
         const double rn = dn - 0.5 * (a.vn + b.vn) * dt;
         const double re = de - 0.5 * (a.ve + b.ve) * dt;
@@ -118,7 +119,8 @@ private:
 
     void check_frozen(const PositionFix& f) {
         const bool moving = std::hypot(f.vn, f.ve) > kFrozenSpeed;
-        if (!moving || !frozen_since_ || f.lat != frozen_since_->lat || f.lon != frozen_since_->lon) {
+        if (!moving || !frozen_since_ || f.lat != frozen_since_->lat ||
+            f.lon != frozen_since_->lon) {
             frozen_since_ = moving ? std::optional<PositionFix>(f) : std::nullopt;
             return;
         }

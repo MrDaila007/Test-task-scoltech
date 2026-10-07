@@ -55,9 +55,9 @@ struct CoreStats {
     std::uint64_t rx_datagrams = 0;
     std::uint64_t rx_oversize = 0;
     std::uint64_t rx_time_regressions = 0;
-    std::uint64_t rx_dropped_silent = 0;   // arrived while rebooting
+    std::uint64_t rx_dropped_silent = 0;  // arrived while rebooting
     std::uint64_t tx_frames = 0;
-    std::uint64_t tx_suppressed = 0;       // produced while rebooting
+    std::uint64_t tx_suppressed = 0;  // produced while rebooting
     std::uint64_t statustexts = 0;
     std::uint64_t missed_deadlines = 0;
     std::array<std::uint64_t, 4> missed_per_stream{};  // indexed by Stream

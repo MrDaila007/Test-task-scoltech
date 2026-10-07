@@ -52,7 +52,7 @@ class SetpointGate {
 public:
     static constexpr TimeNs kNoSetpoint = std::numeric_limits<TimeNs>::min();
 
-    explicit SetpointGate(GateLimits limits) noexcept;
+    explicit SetpointGate(const GateLimits& limits) noexcept;
 
     GateOutcome submit(TimeNs now, const SetpointMsg& msg) noexcept;
 

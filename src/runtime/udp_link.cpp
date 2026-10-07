@@ -66,8 +66,8 @@ UdpLink::~UdpLink() {
 }
 
 bool UdpLink::send(const std::uint8_t* data, std::size_t len) noexcept {
-    const ssize_t n = ::sendto(fd_, data, len, 0, reinterpret_cast<const sockaddr*>(&remote_),
-                               sizeof(remote_));
+    const ssize_t n =
+        ::sendto(fd_, data, len, 0, reinterpret_cast<const sockaddr*>(&remote_), sizeof(remote_));
     return n == static_cast<ssize_t>(len);
 }
 

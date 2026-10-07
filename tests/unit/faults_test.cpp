@@ -42,7 +42,7 @@ TEST(FaultSchedule, ActiveWindowsAndBoundaries) {
                               7);
     EXPECT_EQ(sched.active(FaultType::Link, 10 * kS - 1), nullptr);
     ASSERT_NE(sched.active(FaultType::Link, 10 * kS), nullptr);
-    EXPECT_EQ(sched.active(FaultType::Link, 15 * kS), nullptr);  // half-open window
+    EXPECT_EQ(sched.active(FaultType::Link, 15 * kS), nullptr);    // half-open window
     EXPECT_NE(sched.active(FaultType::Gnss, 1000 * kS), nullptr);  // duration 0 = until the end
     EXPECT_NE(sched.active(FaultType::FcReboot, 31 * kS), nullptr);
     EXPECT_EQ(sched.active(FaultType::FcReboot, 32 * kS), nullptr);  // boot_ms window

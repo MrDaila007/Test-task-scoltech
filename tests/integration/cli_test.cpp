@@ -30,7 +30,7 @@ TEST(Cli, HelpAndVersion) {
 
 TEST(Cli, BadCommandLineIs64) {
     EXPECT_EQ(run("--no-such-flag").exit_code, 64);
-    EXPECT_EQ(run("").exit_code, 64);  // --config missing
+    EXPECT_EQ(run("").exit_code, 64);          // --config missing
     EXPECT_EQ(run("--config").exit_code, 64);  // value missing
 }
 

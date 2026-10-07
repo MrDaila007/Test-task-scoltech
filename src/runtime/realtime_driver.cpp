@@ -72,8 +72,8 @@ public:
     void emit(TimeNs /*t*/, const std::uint8_t* data, std::size_t len,
               const PacketTag& tag) noexcept override {
         const TimeNs t_send = monotonic_ns() - t0_;
-        if (tag.stream < kStreamCount &&
-            (core_.active_faults(tag.deadline) & (1U << static_cast<unsigned>(FaultType::Link))) == 0) {
+        if (tag.stream < kStreamCount && (core_.active_faults(tag.deadline) &
+                                          (1U << static_cast<unsigned>(FaultType::Link))) == 0) {
             jitter[tag.stream].add(t_send - tag.deadline);
         }
         if (link_.send(data, len)) {
@@ -143,36 +143,38 @@ std::string build_report(const HostInfo& host, double duration_s, const SocketSi
                                         cfg.telemetry_hz.global_position, cfg.telemetry_hz.battery};
     std::string out;
     char buf[512];
-    std::snprintf(buf, sizeof(buf),
-                  "{\n  \"host\": {\"kernel\": \"%s\", \"arch\": \"%s\", \"governor\": \"%s\", "
-                  "\"sched_fifo\": %s, \"mlockall\": %s},\n  \"duration_s\": %.3f,\n  \"streams\": {",
-                  host.kernel.c_str(), host.arch.c_str(), host.governor.c_str(),
-                  host.sched_fifo ? "true" : "false", host.mlockall ? "true" : "false", duration_s);
+    std::snprintf(
+        buf, sizeof(buf),
+        "{\n  \"host\": {\"kernel\": \"%s\", \"arch\": \"%s\", \"governor\": \"%s\", "
+        "\"sched_fifo\": %s, \"mlockall\": %s},\n  \"duration_s\": %.3f,\n  \"streams\": {",
+        host.kernel.c_str(), host.arch.c_str(), host.governor.c_str(),
+        host.sched_fifo ? "true" : "false", host.mlockall ? "true" : "false", duration_s);
     out += buf;
     bool ok = true;
     for (std::size_t i = 0; i < kStreamCount; ++i) {
         const JitterStats& j = sink.jitter[i];
         const double max_us = static_cast<double>(j.max_ns()) / 1000.0;
         ok = ok && max_us <= 1000.0;
-        std::snprintf(buf, sizeof(buf),
-                      "%s\n    \"%s\": {\"period_us\": %.0f, \"n\": %llu, \"err_us\": {\"p50\": %.0f, "
-                      "\"p99\": %.0f, \"max\": %.1f}, \"missed\": %llu}",
-                      i == 0 ? "" : ",", stream_name(static_cast<Stream>(i)), 1e6 / rates[i],
-                      static_cast<unsigned long long>(j.count()), j.percentile_us(0.5),
-                      j.percentile_us(0.99), max_us,
-                      static_cast<unsigned long long>(st.missed_per_stream[i]));
+        std::snprintf(
+            buf, sizeof(buf),
+            "%s\n    \"%s\": {\"period_us\": %.0f, \"n\": %llu, \"err_us\": {\"p50\": %.0f, "
+            "\"p99\": %.0f, \"max\": %.1f}, \"missed\": %llu}",
+            i == 0 ? "" : ",", stream_name(static_cast<Stream>(i)), 1e6 / rates[i],
+            static_cast<unsigned long long>(j.count()), j.percentile_us(0.5), j.percentile_us(0.99),
+            max_us, static_cast<unsigned long long>(st.missed_per_stream[i]));
         out += buf;
     }
-    std::snprintf(buf, sizeof(buf),
-                  "\n  },\n  \"rx\": {\"datagrams\": %llu, \"frames\": %llu, \"crc_errors\": %llu, "
-                  "\"setpoints_rejected\": %llu},\n  \"tx\": {\"frames\": %llu, \"send_errors\": %llu},"
-                  "\n  \"jitter_ok\": %s\n}\n",
-                  static_cast<unsigned long long>(st.rx_datagrams),
-                  static_cast<unsigned long long>(st.decoder.frames_ok),
-                  static_cast<unsigned long long>(st.decoder.crc_errors),
-                  static_cast<unsigned long long>(rejected_setpoints(st.gate)),
-                  static_cast<unsigned long long>(sink.sent),
-                  static_cast<unsigned long long>(sink.send_errors), ok ? "true" : "false");
+    std::snprintf(
+        buf, sizeof(buf),
+        "\n  },\n  \"rx\": {\"datagrams\": %llu, \"frames\": %llu, \"crc_errors\": %llu, "
+        "\"setpoints_rejected\": %llu},\n  \"tx\": {\"frames\": %llu, \"send_errors\": %llu},"
+        "\n  \"jitter_ok\": %s\n}\n",
+        static_cast<unsigned long long>(st.rx_datagrams),
+        static_cast<unsigned long long>(st.decoder.frames_ok),
+        static_cast<unsigned long long>(st.decoder.crc_errors),
+        static_cast<unsigned long long>(rejected_setpoints(st.gate)),
+        static_cast<unsigned long long>(sink.sent),
+        static_cast<unsigned long long>(sink.send_errors), ok ? "true" : "false");
     out += buf;
     return out;
 }

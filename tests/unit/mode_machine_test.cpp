@@ -7,11 +7,11 @@
 namespace {
 
 using fcstub::AckResult;
+using fcstub::kNsPerMs;
 using fcstub::Mode;
 using fcstub::ModeEvent;
 using fcstub::ModeMachine;
 using fcstub::TimeNs;
-using fcstub::kNsPerMs;
 
 constexpr TimeNs kReady = 2000 * kNsPerMs;
 constexpr TimeNs kTimeout = 500 * kNsPerMs;

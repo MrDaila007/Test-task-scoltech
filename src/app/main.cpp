@@ -78,7 +78,7 @@ bool* flag_slot(Options& o, const std::string& name) {
 }
 
 // Returns false (after printing why) on a malformed command line.
-bool parse_args(int argc, char** argv, Options& o) {
+bool parse_args(int argc, const char* const* argv, Options& o) {
     for (int i = 1; i < argc; ++i) {
         const std::string name = argv[i];
         if (bool* flag = flag_slot(o, name)) {

@@ -143,7 +143,8 @@ TEST(MavCodec, StatusTextIsTruncatedTo50) {
 TEST(MavCodec, CommandAckAndTimesyncCarryTargets) {
     MavEncoder enc(1, 1);
     mavlink_command_ack_t ack{};
-    const mavlink_message_t ack_msg = parse_one(enc.command_ack({400, MAV_RESULT_DENIED, 255, 190}));
+    const mavlink_message_t ack_msg =
+        parse_one(enc.command_ack({400, MAV_RESULT_DENIED, 255, 190}));
     mavlink_msg_command_ack_decode(&ack_msg, &ack);
     EXPECT_EQ(ack.command, 400);
     EXPECT_EQ(ack.result, MAV_RESULT_DENIED);
@@ -206,8 +207,8 @@ TEST(MavCodec, DecodesCommandLongAndTimesyncAndIgnoresOthers) {
         const std::uint16_t n = mavlink_msg_to_send_buffer(buf, &msg);
         stream.insert(stream.end(), buf, buf + n);
     };
-    mavlink_msg_command_long_pack_status(255, 190, &st, &msg, 1, 1, MAV_CMD_COMPONENT_ARM_DISARM,
-                                         0, 1.0F, 0, 0, 0, 0, 0, 0);
+    mavlink_msg_command_long_pack_status(255, 190, &st, &msg, 1, 1, MAV_CMD_COMPONENT_ARM_DISARM, 0,
+                                         1.0F, 0, 0, 0, 0, 0, 0);
     append();
     mavlink_msg_timesync_pack_status(255, 190, &st, &msg, 0, 987654321, 1, 1);
     append();
@@ -225,15 +226,16 @@ TEST(MavCodec, DecodesCommandLongAndTimesyncAndIgnoresOthers) {
     const auto& ts = std::get<TimesyncMsg>(out.messages[1]);
     EXPECT_EQ(ts.tc1, 0);
     EXPECT_EQ(ts.ts1, 987654321);
-    EXPECT_EQ(std::get<OtherMsg>(out.messages[2]).msgid, static_cast<std::uint32_t>(MAVLINK_MSG_ID_HEARTBEAT));
+    EXPECT_EQ(std::get<OtherMsg>(out.messages[2]).msgid,
+              static_cast<std::uint32_t>(MAVLINK_MSG_ID_HEARTBEAT));
 }
 
 TEST(MavCodec, AcceptsMavlink1Input) {
     mavlink_status_t st{};
     st.flags |= MAVLINK_STATUS_FLAG_OUT_MAVLINK1;
     mavlink_message_t msg{};
-    mavlink_msg_command_long_pack_status(255, 190, &st, &msg, 1, 1, MAV_CMD_DO_SET_MODE, 0,
-                                         1.0F, 6.0F, 0, 0, 0, 0, 0);
+    mavlink_msg_command_long_pack_status(255, 190, &st, &msg, 1, 1, MAV_CMD_DO_SET_MODE, 0, 1.0F,
+                                         6.0F, 0, 0, 0, 0, 0);
     std::uint8_t buf[MAVLINK_MAX_PACKET_LEN];
     const std::uint16_t n = mavlink_msg_to_send_buffer(buf, &msg);
     ASSERT_EQ(buf[0], MAVLINK_STX_MAVLINK1);

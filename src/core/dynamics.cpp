@@ -30,7 +30,7 @@ double wrap_pi(double angle) noexcept {
     return a - kPi;
 }
 
-Dynamics::Dynamics(DynamicsParams params) noexcept : params_(params) {}
+Dynamics::Dynamics(const DynamicsParams& params) noexcept : params_(params) {}
 
 void Dynamics::halt() noexcept {
     state_.vel = {};

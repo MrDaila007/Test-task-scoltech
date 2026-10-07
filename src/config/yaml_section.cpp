@@ -12,7 +12,8 @@ std::string index_path(const std::string& base, std::size_t index) {
     return base + "[" + std::to_string(index) + "]";
 }
 
-Section::Section(YAML::Node node, std::string path) : node_(std::move(node)), path_(std::move(path)) {
+Section::Section(YAML::Node node, std::string path)
+    : node_(std::move(node)), path_(std::move(path)) {
     if (node_ && !node_.IsNull() && !node_.IsMap()) {
         throw ConfigError(path_, "expected a mapping");
     }
@@ -95,9 +96,7 @@ void Section::vec3(const char* key, Vec3& out, double lo, double hi) {
     out = value;
 }
 
-Section Section::child(const char* key) {
-    return Section(take(key), join_path(path_, key));
-}
+Section Section::child(const char* key) { return Section(take(key), join_path(path_, key)); }
 
 std::vector<YAML::Node> Section::sequence(const char* key, std::size_t max_len) {
     const YAML::Node n = take(key);

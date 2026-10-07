@@ -119,8 +119,8 @@ void FcCore::handle_command(const CommandLongMsg& msg) noexcept {
             send_text(kSeverityWarning, deny_text(change.reason));
         }
     }
-    send(encoder_.command_ack({msg.command, static_cast<std::uint8_t>(result), msg.source_system,
-                               msg.source_component}));
+    send(encoder_.command_ack(
+        {msg.command, static_cast<std::uint8_t>(result), msg.source_system, msg.source_component}));
 }
 
 void FcCore::handle_timesync(const TimesyncMsg& msg) noexcept {

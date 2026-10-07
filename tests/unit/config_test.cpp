@@ -52,7 +52,8 @@ TEST(Config, SchemaVersionIsMandatoryAndPinned) {
 TEST(Config, UnknownKeyIsRejectedWithItsPath) {
     expect_error_at(kMinimal + "link: {bogus: 1}\n", "link.bogus");
     expect_error_at(kMinimal + "extra: 1\n", "extra");
-    expect_error_at(kMinimal + "faults:\n  - {type: link, start_s: 1, delay: 5}\n", "faults[0].delay");
+    expect_error_at(kMinimal + "faults:\n  - {type: link, start_s: 1, delay: 5}\n",
+                    "faults[0].delay");
 }
 
 TEST(Config, WrongTypeIsRejected) {
@@ -102,8 +103,9 @@ faults:
 TEST(Config, FaultFieldsAreTypeSpecific) {
     expect_error_at(kMinimal + "faults:\n  - {type: fc_reboot, start_s: 1, duration_s: 2}\n",
                     "faults[0].duration_s");
-    expect_error_at(kMinimal + "faults:\n  - {type: gnss, start_s: 1, kind: jump, drift_mps: [1, 0, 0]}\n",
-                    "faults[0].drift_mps");
+    expect_error_at(
+        kMinimal + "faults:\n  - {type: gnss, start_s: 1, kind: jump, drift_mps: [1, 0, 0]}\n",
+        "faults[0].drift_mps");
     expect_error_at(kMinimal + "faults:\n  - {type: gnss, start_s: 1, offset_m: [1, 0]}\n",
                     "faults[0].offset_m");
     expect_error_at(kMinimal + "faults:\n  - {start_s: 1}\n", "faults[0].type");
@@ -150,10 +152,12 @@ client:
 }
 
 TEST(Config, ClientActionsValidated) {
-    expect_error_at(kMinimal + "client:\n  - {kind: setpoints, start_s: 5, end_s: 4, rate_hz: 20, "
-                               "frame: velocity, value: [0, 0, 0]}\n",
+    expect_error_at(kMinimal +
+                        "client:\n  - {kind: setpoints, start_s: 5, end_s: 4, rate_hz: 20, "
+                        "frame: velocity, value: [0, 0, 0]}\n",
                     "client[0].end_s");
-    expect_error_at(kMinimal + "client:\n  - {kind: command, at_s: 1, cmd: fly}\n", "client[0].cmd");
+    expect_error_at(kMinimal + "client:\n  - {kind: command, at_s: 1, cmd: fly}\n",
+                    "client[0].cmd");
     expect_error_at(kMinimal + "client:\n  - {kind: command, at_s: 1, cmd: arm, rate_hz: 2}\n",
                     "client[0].rate_hz");
 }
@@ -178,8 +182,9 @@ TEST(Config, MoreThan200ParamsIsRejected) {
     std::string yaml = kMinimal + "client:\n";
     // 1 + 32 actions * 7 leaves = 225 > 200, while each list stays within its own length limit.
     for (int i = 0; i < 32; ++i) {
-        yaml += "  - {kind: setpoints, start_s: 0, end_s: 1, rate_hz: 1, frame: velocity, "
-                "value: [0, 0, 0]}\n";
+        yaml +=
+            "  - {kind: setpoints, start_s: 0, end_s: 1, rate_hz: 1, frame: velocity, "
+            "value: [0, 0, 0]}\n";
     }
     expect_error_at(yaml, "");
 }

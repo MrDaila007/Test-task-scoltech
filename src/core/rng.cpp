@@ -24,9 +24,7 @@ Rng::Rng(std::uint64_t seed, std::uint64_t stream_id)
 
 std::uint64_t Rng::next_u64() noexcept { return engine_(); }
 
-double Rng::uniform01() noexcept {
-    return static_cast<double>(next_u64() >> 11U) * kTwoPowMinus53;
-}
+double Rng::uniform01() noexcept { return static_cast<double>(next_u64() >> 11U) * kTwoPowMinus53; }
 
 double Rng::normal() noexcept {
     const double u1 = 1.0 - uniform01();  // (0, 1]: log() stays finite

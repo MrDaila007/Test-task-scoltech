@@ -41,13 +41,13 @@ constexpr std::uint32_t px4_custom_mode(std::uint8_t main_mode, std::uint8_t sub
 
 // MAVLink constants the core needs without including the MAVLink headers;
 // mav_codec.cpp checks every value against the library with static_assert.
-inline constexpr std::uint8_t kSeverityCritical = 2;  // MAV_SEVERITY_CRITICAL
-inline constexpr std::uint8_t kSeverityWarning = 4;   // MAV_SEVERITY_WARNING
-inline constexpr std::uint8_t kSeverityInfo = 6;      // MAV_SEVERITY_INFO
-inline constexpr std::uint8_t kStateUninit = 0;       // MAV_STATE_UNINIT
-inline constexpr std::uint8_t kStateBoot = 1;         // MAV_STATE_BOOT
-inline constexpr std::uint8_t kStateStandby = 3;      // MAV_STATE_STANDBY
-inline constexpr std::uint8_t kStateActive = 4;       // MAV_STATE_ACTIVE
+inline constexpr std::uint8_t kSeverityCritical = 2;           // MAV_SEVERITY_CRITICAL
+inline constexpr std::uint8_t kSeverityWarning = 4;            // MAV_SEVERITY_WARNING
+inline constexpr std::uint8_t kSeverityInfo = 6;               // MAV_SEVERITY_INFO
+inline constexpr std::uint8_t kStateUninit = 0;                // MAV_STATE_UNINIT
+inline constexpr std::uint8_t kStateBoot = 1;                  // MAV_STATE_BOOT
+inline constexpr std::uint8_t kStateStandby = 3;               // MAV_STATE_STANDBY
+inline constexpr std::uint8_t kStateActive = 4;                // MAV_STATE_ACTIVE
 inline constexpr std::uint8_t kModeFlagCustomModeEnabled = 1;  // MAV_MODE_FLAG_CUSTOM_MODE_ENABLED
 inline constexpr std::uint8_t kModeFlagSafetyArmed = 128;      // MAV_MODE_FLAG_SAFETY_ARMED
 inline constexpr std::uint16_t kCmdComponentArmDisarm = 400;   // MAV_CMD_COMPONENT_ARM_DISARM
@@ -63,7 +63,7 @@ struct HeartbeatData {
 
 struct AttitudeData {
     std::uint32_t time_boot_ms;
-    float roll, pitch, yaw;  // rad
+    float roll, pitch, yaw;                 // rad
     float rollspeed, pitchspeed, yawspeed;  // rad/s
 };
 
@@ -77,10 +77,10 @@ struct GlobalPositionData {
 
 struct BatteryData {
     int cells;
-    double voltage_v;      // pack voltage under load
+    double voltage_v;  // pack voltage under load
     double current_a;
     double consumed_mah;
-    double remaining;      // 0..1
+    double remaining;  // 0..1
 };
 
 struct StatusTextData {
@@ -124,8 +124,8 @@ private:
 // client of the sim mode and by tests). Owns its own tx sequence like MavEncoder.
 class MavClientEncoder {
 public:
-    MavClientEncoder(std::uint8_t system_id, std::uint8_t component_id,
-                     std::uint8_t target_system, std::uint8_t target_component) noexcept;
+    MavClientEncoder(std::uint8_t system_id, std::uint8_t component_id, std::uint8_t target_system,
+                     std::uint8_t target_component) noexcept;
 
     FrameBuf command_long(std::uint16_t command, const std::array<float, 7>& params,
                           std::uint8_t confirmation = 0) noexcept;
@@ -189,8 +189,8 @@ protected:
 
 struct DecoderStats {
     std::uint64_t frames_ok = 0;
-    std::uint64_t crc_errors = 0;   // complete frame, bad checksum
-    std::uint64_t other_errors = 0; // bad signature / malformed
+    std::uint64_t crc_errors = 0;    // complete frame, bad checksum
+    std::uint64_t other_errors = 0;  // bad signature / malformed
 };
 
 class MavDecoder {
@@ -205,8 +205,8 @@ public:
 
 private:
     DecoderStats stats_;
-    alignas(8) std::array<unsigned char, 64> status_{};       // mavlink_status_t (parser state)
-    alignas(8) std::array<unsigned char, 320> rx_buffer_{};   // mavlink_message_t (in progress)
+    alignas(8) std::array<unsigned char, 64> status_{};      // mavlink_status_t (parser state)
+    alignas(8) std::array<unsigned char, 320> rx_buffer_{};  // mavlink_message_t (in progress)
 };
 
 }  // namespace fcstub

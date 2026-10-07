@@ -73,9 +73,9 @@ void Section::number(const char* key, T& out, T lo, T hi) {
     if (!n) {
         return;
     }
-    using Wide = std::conditional_t<std::is_floating_point_v<T>, double,
-                                    std::conditional_t<std::is_signed_v<T>, long long,
-                                                       unsigned long long>>;
+    using Wide =
+        std::conditional_t<std::is_floating_point_v<T>, double,
+                           std::conditional_t<std::is_signed_v<T>, long long, unsigned long long>>;
     Wide value{};
     try {
         value = n.as<Wide>();

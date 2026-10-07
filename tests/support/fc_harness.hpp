@@ -78,8 +78,8 @@ public:
 
     Bytes command(std::uint16_t cmd, float p1, float p2 = 0, float p3 = 0,
                   std::uint8_t confirmation = 0) {
-        mavlink_msg_command_long_pack_status(255, 190, &status_, &msg_, 1, 1, cmd, confirmation,
-                                             p1, p2, p3, 0, 0, 0, 0);
+        mavlink_msg_command_long_pack_status(255, 190, &status_, &msg_, 1, 1, cmd, confirmation, p1,
+                                             p2, p3, 0, 0, 0, 0);
         return finish();
     }
     Bytes arm(bool on = true) { return command(MAV_CMD_COMPONENT_ARM_DISARM, on ? 1.0F : 0.0F); }
@@ -87,9 +87,9 @@ public:
         return command(MAV_CMD_DO_SET_MODE, MAV_MODE_FLAG_CUSTOM_MODE_ENABLED, main, sub);
     }
     Bytes velocity(float vn, float ve, float vd) {
-        mavlink_msg_set_position_target_local_ned_pack_status(
-            255, 190, &status_, &msg_, 0, 1, 1, MAV_FRAME_LOCAL_NED, 3527, 0, 0, 0, vn, ve, vd, 0,
-            0, 0, 0, 0);
+        mavlink_msg_set_position_target_local_ned_pack_status(255, 190, &status_, &msg_, 0, 1, 1,
+                                                              MAV_FRAME_LOCAL_NED, 3527, 0, 0, 0,
+                                                              vn, ve, vd, 0, 0, 0, 0, 0);
         return finish();
     }
     Bytes timesync(std::int64_t ts1) {

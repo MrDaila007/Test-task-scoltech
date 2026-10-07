@@ -42,7 +42,9 @@ void* counted_aligned_alloc(std::size_t size, std::align_val_t align) {
 void* operator new(std::size_t size) { return counted_alloc(size); }
 void* operator new[](std::size_t size) { return counted_alloc(size); }
 void* operator new(std::size_t size, std::align_val_t a) { return counted_aligned_alloc(size, a); }
-void* operator new[](std::size_t size, std::align_val_t a) { return counted_aligned_alloc(size, a); }
+void* operator new[](std::size_t size, std::align_val_t a) {
+    return counted_aligned_alloc(size, a);
+}
 void operator delete(void* p) noexcept { std::free(p); }
 void operator delete[](void* p) noexcept { std::free(p); }
 void operator delete(void* p, std::size_t) noexcept { std::free(p); }
@@ -122,6 +124,7 @@ TEST(NoAlloc, CoreRunsSixtySecondsWithAllFaultsWithoutAllocating) {
 TEST(NoAlloc, CounterDetectsAnAllocation) {
     g_allocations = 0;
     g_counting = true;
+    // cppcheck-suppress unusedAllocatedMemory ; the allocation itself is the point
     auto* volatile p = new int(42);
     g_counting = false;
     delete p;

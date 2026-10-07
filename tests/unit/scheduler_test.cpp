@@ -8,10 +8,10 @@
 
 namespace {
 
-using fcstub::Scheduler;
-using fcstub::TimeNs;
 using fcstub::kNsPerMs;
 using fcstub::kNsPerS;
+using fcstub::Scheduler;
+using fcstub::TimeNs;
 
 struct Fired {
     Scheduler::TaskId id;
