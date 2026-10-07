@@ -2,6 +2,7 @@
 # time and bytes are passed in by the drivers, frames are passed out through a sink.
 add_library(fcstub_core STATIC
     core/rng.cpp
+    core/mav_codec.cpp
     core/sha256.cpp
 )
 target_include_directories(fcstub_core PUBLIC ${PROJECT_SOURCE_DIR}/include)

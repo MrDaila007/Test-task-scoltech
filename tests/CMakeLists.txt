@@ -5,6 +5,7 @@ add_executable(fcstub_tests
     unit/rng_test.cpp
     unit/sha256_test.cpp
     unit/config_test.cpp
+    unit/mav_codec_test.cpp
 )
 target_link_libraries(fcstub_tests PRIVATE
     fcstub_core fcstub_config fcstub_warnings fcstub_fp fcstub::mavlink GTest::gtest_main)
