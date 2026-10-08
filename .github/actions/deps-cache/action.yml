@@ -1,0 +1,28 @@
+name: Cache CMake dependency downloads
+description: >
+  Caches the FetchContent download state (build/<preset>/_deps/*-src and *-subbuild)
+  so MAVLink, yaml-cpp and GoogleTest are not cloned again. Build trees (*-build) are
+  not cached: they are compiler- and flag-specific and are rebuilt every run.
+  The key includes the pinned revisions (cmake/Dependencies.cmake), the preset, the job,
+  the runner image/arch and the CMake version: the subbuild trees record absolute paths
+  and the CMake that generated them, so they are only reused in the same environment.
+inputs:
+  preset:
+    description: CMake configure preset whose binary dir is used (release, debug, asan, coverage)
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Detect CMake version
+      id: cmake
+      shell: bash
+      run: |
+        echo "version=$(cmake --version | head -n1 | awk '{print $3}')" >> "${GITHUB_OUTPUT}"
+        echo "image=${ImageOS:-container}" >> "${GITHUB_OUTPUT}"
+    - name: Restore/save _deps
+      uses: actions/cache@v4
+      with:
+        path: |
+          build/${{ inputs.preset }}/_deps/*-src
+          build/${{ inputs.preset }}/_deps/*-subbuild
+        key: deps-${{ github.job }}-${{ steps.cmake.outputs.image }}-${{ runner.arch }}-cmake${{ steps.cmake.outputs.version }}-${{ inputs.preset }}-${{ hashFiles('cmake/Dependencies.cmake') }}

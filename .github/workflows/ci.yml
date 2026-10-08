@@ -1,0 +1,216 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # yaml-cpp 0.8.0 declares cmake_minimum_required(VERSION 3.4); CMake >= 4 refuses that
+  # without this floor. Older CMake ignores the variable.
+  CMAKE_POLICY_VERSION_MINIMUM: "3.5"
+  # Shared runners are loaded: the 5 s real-time jitter test runs only in the `timing` job.
+  CTEST_EXTRA_ARGS: "-LE timing"
+
+jobs:
+  build-test:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: release / ubuntu-22.04 / g++ 11
+            os: ubuntu-22.04
+          - name: release / ubuntu-24.04 / g++ 13
+            os: ubuntu-24.04
+    env:
+      CXX: g++
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ninja-build
+          cmake --version | head -n1
+          "${CXX}" --version | head -n1
+      - uses: ./.github/actions/deps-cache
+        with:
+          preset: release
+      - name: Build and test
+        run: ./scripts/build_and_test.sh release
+
+  clang:
+    name: release / ubuntu-22.04 / clang++ 14
+    # Stock ubuntu:22.04 container: the hosted image carries several GCC versions and
+    # clang would pick the newest libstdc++; the container keeps clang 14 + libstdc++ 11.
+    runs-on: ubuntu-22.04
+    container: ubuntu:22.04
+    timeout-minutes: 30
+    env:
+      CXX: clang++
+    steps:
+      - name: Install build tools
+        run: |
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            build-essential clang cmake ninja-build git ca-certificates
+          cmake --version | head -n1
+          clang++ --version | head -n1
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/deps-cache
+        with:
+          preset: release
+      - name: Build and test
+        run: ./scripts/build_and_test.sh release
+
+  sanitizers:
+    name: asan + ubsan / ubuntu-22.04 / g++
+    runs-on: ubuntu-22.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ninja-build
+      - uses: ./.github/actions/deps-cache
+        with:
+          preset: asan
+      - name: Build and test under AddressSanitizer + UndefinedBehaviorSanitizer
+        run: ./scripts/build_and_test.sh asan
+
+  quality:
+    name: quality (cppcheck + clang-format)
+    # Ubuntu 22.04 packages (cppcheck 2.7, clang-format 14) match the versions the
+    # sources and .clang-format are checked with; other versions format differently.
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ninja-build cppcheck clang-format-14
+          sudo update-alternatives --install /usr/bin/clang-format clang-format /usr/bin/clang-format-14 100
+          sudo update-alternatives --set clang-format /usr/bin/clang-format-14
+          cppcheck --version
+          clang-format --version
+      - uses: ./.github/actions/deps-cache
+        with:
+          preset: debug
+      - name: cppcheck and clang-format
+        run: ./scripts/quality.sh
+
+  coverage:
+    name: coverage (gcovr, >= 80 % lines)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ninja-build
+          pipx install gcovr==7.2
+          gcovr --version | head -n1
+      - uses: ./.github/actions/deps-cache
+        with:
+          preset: coverage
+      - name: Build, test and enforce the 80 % line threshold
+        run: ./scripts/coverage.sh
+      - name: Write HTML/XML report
+        if: ${{ !cancelled() }}
+        run: |
+          mkdir -p out/coverage
+          gcovr --root . --filter 'src/' --exclude 'src/app/' build/coverage \
+                --html-details out/coverage/index.html \
+                --xml out/coverage/coverage.xml \
+                --txt out/coverage/summary.txt
+          {
+            echo '### Coverage of src/ (without src/app/)'
+            echo '```'
+            tail -n 3 out/coverage/summary.txt
+            echo '```'
+          } >> "${GITHUB_STEP_SUMMARY}"
+      - name: Upload coverage report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: out/coverage/
+          if-no-files-found: warn
+          retention-days: 14
+
+  arm64:
+    name: arm64 (functional tests + golden hash)
+    # Native arm64 runner when it is available: for public repositories, or when the
+    # repository variable ARM64_RUNNER names one (e.g. ubuntu-24.04-arm or a self-hosted
+    # label). Otherwise an x64 runner builds and tests in an arm64 container under qemu.
+    runs-on: ${{ vars.ARM64_RUNNER || (github.event.repository.private && 'ubuntu-24.04' || 'ubuntu-24.04-arm') }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      # --- native arm64 runner ---
+      - name: Install build tools (native)
+        if: runner.arch == 'ARM64'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends build-essential cmake ninja-build
+          uname -m
+      - uses: ./.github/actions/deps-cache
+        if: runner.arch == 'ARM64'
+        with:
+          preset: release
+      - name: Build and test (native)
+        if: runner.arch == 'ARM64'
+        run: ./scripts/build_and_test.sh release
+
+      # --- fallback: emulated arm64 on an x64 runner ---
+      - name: Set up QEMU
+        if: runner.arch != 'ARM64'
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+      - name: Build and test in an arm64 container (qemu)
+        if: runner.arch != 'ARM64'
+        # Under emulation real time is not real: all real-process tests (label
+        # `integration`, includes `integration_timing`) are excluded. Unit, scenario and
+        # golden-hash tests run in full. Same recipe as scripts/verify_clean_machine.sh arm64.
+        run: |
+          git archive --format=tar HEAD |
+            docker build --progress=plain --platform linux/arm64 -f docker/Dockerfile \
+              --build-arg "CTEST_EXTRA_ARGS=-LE integration" -
+
+  timing:
+    name: real-time timing (non-blocking)
+    # The 1 ms jitter budget needs an unloaded machine; shared runners often are not.
+    # A failure here is informational and does not fail the workflow.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    continue-on-error: true
+    env:
+      CTEST_EXTRA_ARGS: "-L timing"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ninja-build
+          nproc
+      - uses: ./.github/actions/deps-cache
+        with:
+          preset: release
+      - name: Build and run the timing test
+        run: ./scripts/build_and_test.sh release

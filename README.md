@@ -1,5 +1,7 @@
 # fc_stub — заглушка полётного контроллера PX4 с инъекцией отказов
 
+[![CI](https://github.com/MrDaila007/Test-task-scoltech/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/MrDaila007/Test-task-scoltech/actions/workflows/ci.yml)
+
 Имитатор полётного контроллера для отладки и автоматического тестирования бортового ПО БВС **без железа**. Для бортового ПО он выглядит как PX4:
 - MAVLink 2 поверх UDP;
 - режимы и команды PX4;
@@ -146,6 +148,30 @@
 - **ноль выделений памяти** в ядре после старта (отдельный исполняемый файл подменяет `operator new`);
 - одинаковый SHA-256 двух прогонов и эталонный хэш сценария со всеми отказами — совпадает в `-O0`, `-O2`, под ASan, в clang, на Ubuntu 24.04 (GCC 13) и на aarch64;
 - независимость потоков случайных чисел отказов.
+
+### CI/CD
+
+GitHub Actions: [`.github/workflows/ci.yml`](.github/workflows/ci.yml) на push и pull request в `main`, ручной запуск — `workflow_dispatch`. Команды те же, что локально. На общих раннерах тест джиттера исключён (`CTEST_EXTRA_ARGS="-LE timing"`).
+
+| Задача | Что делает |
+|---|---|
+| `release / ubuntu-22.04, 24.04 / g++` | `./scripts/build_and_test.sh release` на GCC 11 и GCC 13 |
+| `release / ubuntu-22.04 / clang++ 14` | то же с clang++ в чистом контейнере `ubuntu:22.04` |
+| `asan + ubsan` | `./scripts/build_and_test.sh asan` |
+| `quality` | `./scripts/quality.sh`: cppcheck 2.7 и clang-format 14 из пакетов Ubuntu 22.04 |
+| `coverage` | `./scripts/coverage.sh` (порог 80 % строк), HTML-отчёт — артефакт `coverage-report` |
+| `arm64` | функциональные тесты и эталонный хэш на aarch64, без тестов реального времени |
+| `timing` | только джиттер (`-L timing`); не блокирует: на общем раннере 1 мс не гарантирована |
+
+arm64: у публичного репозитория — нативный раннер GitHub (`ubuntu-24.04-arm`, для релиза `ubuntu-22.04-arm`). У приватного — эмуляция qemu в Docker, как `scripts/verify_clean_machine.sh arm64`: исключена вся метка `integration`. Свой раннер (например, Jetson) задаётся переменной репозитория `ARM64_RUNNER`.
+
+Загрузки зависимостей (`build/<preset>/_deps`) кешируются по хэшу `cmake/Dependencies.cmake`. Сборка зависимостей не кешируется.
+
+Релиз: [`.github/workflows/release.yml`](.github/workflows/release.yml) на тег `v*`. Собирает release для x86_64 и aarch64, гоняет тесты без `timing`, публикует GitHub Release с архивами `fc_stub-<тег>-<arch>.tar.gz` (бинарник, `config/`, `docs/`, README) и файлами `.sha256`.
+
+```bash
+git tag v0.1.0 && git push origin v0.1.0
+```
 
 ## Джиттер
 

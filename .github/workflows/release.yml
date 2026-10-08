@@ -1,0 +1,123 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  # yaml-cpp 0.8.0 declares cmake_minimum_required(VERSION 3.4); CMake >= 4 refuses that
+  # without this floor. Older CMake ignores the variable.
+  CMAKE_POLICY_VERSION_MINIMUM: "3.5"
+
+jobs:
+  build:
+    name: build ${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - arch: x86_64
+            runner: ubuntu-22.04
+          # Native arm64 runner for public repositories or when the repository variable
+          # ARM64_RUNNER names one; otherwise an x64 runner builds in an arm64 container (qemu).
+          - arch: aarch64
+            runner: ${{ vars.ARM64_RUNNER || (github.event.repository.private && 'ubuntu-22.04' || 'ubuntu-22.04-arm') }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # --- native build (x86_64 always, aarch64 on an arm64 runner) ---
+      - name: Install build tools (native)
+        if: matrix.arch == 'x86_64' || runner.arch == 'ARM64'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends build-essential cmake ninja-build
+      - name: Build and test (native)
+        if: matrix.arch == 'x86_64' || runner.arch == 'ARM64'
+        env:
+          CXX: g++
+          CTEST_EXTRA_ARGS: "-LE timing"
+        run: ./scripts/build_and_test.sh release
+
+      # --- aarch64 under qemu on an x64 runner ---
+      - name: Set up QEMU
+        if: matrix.arch == 'aarch64' && runner.arch != 'ARM64'
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+      - name: Build and test in an arm64 container (qemu)
+        if: matrix.arch == 'aarch64' && runner.arch != 'ARM64'
+        # Emulated real time is not real: the real-process tests (label `integration`)
+        # are excluded; unit, scenario and golden-hash tests run in full.
+        run: |
+          docker run --rm --platform linux/arm64 \
+            -v "${GITHUB_WORKSPACE}:/src" -w /src \
+            -e CXX=g++ -e "CTEST_EXTRA_ARGS=-LE integration" \
+            -e CMAKE_POLICY_VERSION_MINIMUM \
+            -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
+            ubuntu:22.04 bash -euo pipefail -c '
+              apt-get update
+              DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+                build-essential cmake ninja-build git ca-certificates
+              ./scripts/build_and_test.sh release
+              chown -R "${HOST_UID}:${HOST_GID}" build'
+
+      - name: Package
+        env:
+          ARCH: ${{ matrix.arch }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          bin=build/release/src/fc_stub
+          file "${bin}"
+          case "${ARCH}" in
+            x86_64)  file "${bin}" | grep -q 'x86-64' ;;
+            aarch64) file "${bin}" | grep -q 'aarch64' ;;
+          esac
+          name="fc_stub-${TAG}-${ARCH}"
+          mkdir -p "dist/${name}"
+          cp "${bin}" "dist/${name}/"
+          cp -r config docs README.md "dist/${name}/"
+          tar -C dist -czf "dist/${name}.tar.gz" "${name}"
+          (cd dist && sha256sum "${name}.tar.gz" > "${name}.tar.gz.sha256" && cat "${name}.tar.gz.sha256")
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.arch }}
+          path: |
+            dist/*.tar.gz
+            dist/*.tar.gz.sha256
+          if-no-files-found: error
+
+  publish:
+    name: GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-*
+          path: dist
+          merge-multiple: true
+      - name: Verify checksums
+        working-directory: dist
+        run: sha256sum -c ./*.sha256
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release create "${TAG}" dist/* \
+            --repo "${GITHUB_REPOSITORY}" \
+            --title "fc_stub ${TAG}" \
+            --generate-notes \
+            --verify-tag
