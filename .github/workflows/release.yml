@@ -32,7 +32,7 @@ jobs:
           - arch: aarch64
             runner: ${{ vars.ARM64_RUNNER || (github.event.repository.private && 'ubuntu-22.04' || 'ubuntu-22.04-arm') }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # --- native build (x86_64 always, aarch64 on an arm64 runner) ---
       - name: Install build tools (native)
@@ -87,7 +87,7 @@ jobs:
           cp -r config docs README.md "dist/${name}/"
           tar -C dist -czf "dist/${name}.tar.gz" "${name}"
           (cd dist && sha256sum "${name}.tar.gz" > "${name}.tar.gz.sha256" && cat "${name}.tar.gz.sha256")
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: release-${{ matrix.arch }}
           path: |
@@ -103,7 +103,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v7
         with:
           pattern: release-*
           path: dist
