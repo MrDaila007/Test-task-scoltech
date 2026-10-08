@@ -83,7 +83,8 @@ Config all_faults_config() {
     ClockFaultParams clock;
     clock.drift_ppm = 500;
     clock.step_ms = 20;
-    cfg.faults = {make(FaultType::Link, 8, 10, link), make(FaultType::Gnss, 12, 20, gnss),
+    cfg.faults = {make(FaultType::Link, 8, 10, link),
+                  make(FaultType::Gnss, 12, 20, gnss),
                   make(FaultType::EstimatorFreeze, 20, 5, EstimatorFreezeParams{false}),
                   make(FaultType::ClockFault, 25, 10, clock),
                   make(FaultType::FcReboot, 40, 0, FcRebootParams{3000}),

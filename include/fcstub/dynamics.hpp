@@ -11,7 +11,8 @@
 //
 // Roll and pitch are the tilt needed for the current horizontal acceleration
 // (body frame from yaw); the ground (down = 0) is a hard floor, and a landed
-// vehicle stays put until it is commanded to climb faster than 0.1 m/s. The model is
+// vehicle stays put until it is commanded to climb faster than 0.1 m/s. Without
+// thrust (MotionKind::Disarmed) it falls freely and stops on the ground. The model is
 // deliberately simple: it only has to make setpoints visible in telemetry.
 
 #include "fcstub/config.hpp"
@@ -56,16 +57,18 @@ public:
 
     const VehicleState& state() const noexcept { return state_; }
 
-    // Keep position, stop all motion (used when the autopilot restarts).
-    void halt() noexcept;
+    // Speed of the last ground impact after a fall, m/s; 0 if none.
+    double last_impact_mps() const noexcept { return last_impact_; }
 
 private:
     Vec3 velocity_command(const MotionTarget& target, const VehicleState& est) const noexcept;
     double yaw_rate_command(const MotionTarget& target, const VehicleState& est) const noexcept;
     void update_attitude(double dt, double yaw_rate) noexcept;
+    void fall(double dt) noexcept;
 
     DynamicsParams params_;
     VehicleState state_{};
+    double last_impact_ = 0.0;
 };
 
 double wrap_pi(double angle) noexcept;

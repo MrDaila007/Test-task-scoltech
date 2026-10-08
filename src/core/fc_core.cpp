@@ -92,7 +92,6 @@ void FcCore::reboot(TimeNs now) noexcept {
     encoder_.reset_sequence();
     gate_.reset();
     dedup_ = CommandDedup{};  // the retransmission cache does not survive a reboot
-    dyn_.halt();
     rebooted_once_ = true;
     send_text(kSeverityInfo, "FC stub boot");
 }
@@ -121,7 +120,8 @@ bool FcCore::in_air() const noexcept { return dyn_.state().pos[2] < -0.05; }
 
 MotionTarget FcCore::motion_target() const noexcept {
     MotionTarget t;
-    if (!modes_.armed()) {
+    // No thrust: disarmed, the autopilot rebooting (F2) or a flat pack (F6).
+    if (!modes_.armed() || life_.silent() || battery_.true_soc() <= 0.0) {
         t.kind = MotionKind::Disarmed;
         return t;
     }

@@ -373,3 +373,41 @@ TEST(FcCore, RebootForgetsTheCommandRetransmissionCache) {
     EXPECT_EQ(acks(h).back().result, MAV_RESULT_TEMPORARILY_REJECTED);
     EXPECT_FALSE(h.core.armed());
 }
+
+// A forced disarm in the air stops the motors: the vehicle falls.
+TEST(FcCore, ForcedDisarmInTheAirDropsTheVehicle) {
+    Harness h(base_config());
+    fly_offboard(h, 15 * kS);  // about 11 m up
+    ASSERT_LT(h.core.truth().pos[2], -8.0);
+    h.send(h.client.command(MAV_CMD_COMPONENT_ARM_DISARM, 0.0F, 21196.0F));
+    h.run_until(18 * kS);
+    EXPECT_DOUBLE_EQ(h.core.truth().pos[2], 0.0);
+    const auto es = h.station.of(MAVLINK_MSG_ID_EXTENDED_SYS_STATE);
+    EXPECT_EQ(mavlink_msg_extended_sys_state_get_landed_state(&es.back().msg),
+              MAV_LANDED_STATE_ON_GROUND);
+}
+
+// While the autopilot reboots its motors stop: the vehicle falls (F2).
+TEST(FcCore, RebootInTheAirDropsTheVehicle) {
+    Config cfg = base_config();
+    FaultSpec f;
+    f.type = FaultType::FcReboot;
+    f.start_s = 15.0;
+    f.params = FcRebootParams{3000};
+    cfg.faults.push_back(f);
+    Harness h(cfg);
+    fly_offboard(h, 15 * kS);
+    const double alt = -h.core.truth().pos[2];
+    h.run_until(16 * kS);
+    EXPECT_LT(-h.core.truth().pos[2], alt - 3.0);  // ~4.9 m in the first second
+}
+
+// An empty pack cannot hold the vehicle up, whatever the autopilot believes (F6).
+TEST(FcCore, EmptyBatteryDropsTheVehicle) {
+    Config cfg = base_config();
+    cfg.battery.capacity_mah = 100.0;  // 18 A drains it in 20 s
+    Harness h(cfg);
+    fly_offboard(h, 30 * kS);
+    EXPECT_TRUE(h.core.armed());  // the autopilot still flies "normally"
+    EXPECT_DOUBLE_EQ(h.core.truth().pos[2], 0.0);
+}

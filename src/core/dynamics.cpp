@@ -33,11 +33,24 @@ double wrap_pi(double angle) noexcept {
 
 Dynamics::Dynamics(const DynamicsParams& params) noexcept : params_(params) {}
 
-void Dynamics::halt() noexcept {
-    state_.vel = {};
-    state_.accel = {};
-    state_.roll = state_.pitch = 0.0;
+void Dynamics::fall(double dt) noexcept {
+    constexpr double kImpactRecord = 0.5;  // m/s: slower contacts are resting, not impacts
+    state_.accel = {0.0, 0.0, kGravity};
+    for (std::size_t i = 0; i < 3; ++i) {
+        state_.vel[i] += state_.accel[i] * dt;
+        state_.pos[i] += state_.vel[i] * dt;
+    }
     state_.roll_rate = state_.pitch_rate = state_.yaw_rate = 0.0;
+    if (state_.pos[2] >= 0.0) {
+        const double speed = std::hypot(state_.vel[0], state_.vel[1], state_.vel[2]);
+        if (speed > kImpactRecord) {
+            last_impact_ = speed;
+        }
+        state_.pos[2] = 0.0;
+        state_.vel = {};
+        state_.accel = {};
+        state_.roll = state_.pitch = 0.0;
+    }
 }
 
 Vec3 Dynamics::velocity_command(const MotionTarget& t, const VehicleState& est) const noexcept {
@@ -88,7 +101,7 @@ void Dynamics::update_attitude(double dt, double yaw_rate) noexcept {
 
 void Dynamics::step(double dt, const MotionTarget& target, const VehicleState& est) noexcept {
     if (target.kind == MotionKind::Disarmed) {
-        halt();
+        fall(dt);
         return;
     }
     const Vec3 v_sp = velocity_command(target, est);

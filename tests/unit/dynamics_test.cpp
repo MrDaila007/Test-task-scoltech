@@ -204,3 +204,23 @@ TEST(BatteryFault, HighInternalResistanceSagsTheVoltageOnly) {
     EXPECT_NEAR(healthy.voltage_v() - weak.voltage_v(), 18.0 * 0.02 * 4.0, 1e-9);
     EXPECT_DOUBLE_EQ(healthy.soc(), weak.soc());
 }
+
+// Without thrust (disarmed, autopilot rebooting, empty battery) the vehicle
+// falls under gravity and stops on the ground.
+TEST(Dynamics, WithoutThrustTheVehicleFallsAndStopsOnTheGround) {
+    Dynamics dyn = make_dynamics();
+    run(dyn, velocity(0, 0, -5), 4.0);  // climb to about 18 m
+    const double alt0 = -dyn.state().pos[2];
+    ASSERT_GT(alt0, 15.0);
+    MotionTarget off;
+    off.kind = MotionKind::Disarmed;
+    const double vz0 = dyn.state().vel[2];
+    run(dyn, off, 1.0);
+    EXPECT_NEAR(dyn.state().vel[2], vz0 + 9.80665, 0.05);  // it was climbing at 5 m/s
+    run(dyn, off, 1.0);
+    EXPECT_LT(-dyn.state().pos[2], alt0 - 4.0);
+    run(dyn, off, 10.0);
+    EXPECT_DOUBLE_EQ(dyn.state().pos[2], 0.0);
+    EXPECT_DOUBLE_EQ(dyn.state().vel[2], 0.0);
+    EXPECT_GT(dyn.last_impact_mps(), 15.0);  // hit the ground hard
+}
