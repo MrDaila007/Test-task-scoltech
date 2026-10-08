@@ -227,3 +227,14 @@ TEST(EstimatorNoise, FreezeAlsoFreezesTheNoise) {
     EXPECT_DOUBLE_EQ(later.pos[0], first.pos[0]);
     EXPECT_DOUBLE_EQ(later.vel[1], first.vel[1]);
 }
+
+TEST(EstimatorNoise, NoisyYawStaysWithinPlusMinusPi) {
+    const FaultSchedule sched({}, 1);
+    EstimatorTap tap(sched, EstimatorNoise{0.0, 0.0, 0.05, 1.0}, 0.004, 5);
+    VehicleState truth;
+    for (int i = 1; i <= 250 * 60; ++i) {
+        truth.yaw = (i % 2 == 0) ? 3.1415 : -3.1415;  // right at the wrap
+        const VehicleState& est = tap.update(truth, static_cast<TimeNs>(i) * 4 * kNsPerMs);
+        ASSERT_LE(std::fabs(est.yaw), 3.14159265358979323846) << "step " << i;
+    }
+}

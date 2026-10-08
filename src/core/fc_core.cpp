@@ -176,6 +176,8 @@ void FcCore::handle_mode_events(TimeNs now) noexcept {
     }
 }
 
+static_assert(kMaxFaults <= 32, "overrides_applied_ holds one bit per fault window");
+
 void FcCore::handle_overrides(TimeNs now) noexcept {
     for (const FaultWindow& w : schedule_.windows()) {
         const std::uint32_t bit = 1U << w.index;

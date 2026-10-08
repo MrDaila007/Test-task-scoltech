@@ -34,6 +34,9 @@ void EstimatorTap::apply_noise(VehicleState& est) noexcept {
     add_error(est.roll, att_err_[0], noise_.att_noise_rad);
     add_error(est.pitch, att_err_[1], noise_.att_noise_rad);
     add_error(est.yaw, att_err_[2], noise_.att_noise_rad);
+    if (noise_.att_noise_rad > 0.0) {
+        est.yaw = wrap_pi(est.yaw);  // ATTITUDE.yaw is defined on [-pi, pi]
+    }
 }
 
 VehicleState EstimatorTap::apply_gnss(const VehicleState& truth, TimeNs now) const noexcept {
