@@ -86,7 +86,11 @@ Config all_faults_config() {
     cfg.faults = {make(FaultType::Link, 8, 10, link), make(FaultType::Gnss, 12, 20, gnss),
                   make(FaultType::EstimatorFreeze, 20, 5, EstimatorFreezeParams{false}),
                   make(FaultType::ClockFault, 25, 10, clock),
-                  make(FaultType::FcReboot, 40, 0, FcRebootParams{3000})};
+                  make(FaultType::FcReboot, 40, 0, FcRebootParams{3000}),
+                  make(FaultType::Battery, 5, 0, BatteryFaultParams{0.5, 4.0}),
+                  make(FaultType::ModeOverride, 15, 2,
+                       ModeOverrideParams{OverrideTarget::Hold, OverrideCause::Geofence})};
+    cfg.estimator = {0.5, 0.05, 0.01, 1.0};
     return cfg;
 }
 
@@ -106,6 +110,9 @@ TEST(NoAlloc, CoreRunsSixtySecondsWithAllFaultsWithoutAllocating) {
     for (TimeNs t = h.now; t < 60 * kNsPerS; t += 50 * kNsPerMs) {
         h.run_until(t);
         h.send(h.client.velocity(1, 0.5F, -1));
+        if (t % (5 * kNsPerS) == 0) {
+            h.send(h.client.set_mode(kPx4MainOffboard));  // back after the override
+        }
         if (t % kNsPerS == 0) {
             h.send(h.client.timesync(t));
         }
@@ -116,6 +123,7 @@ TEST(NoAlloc, CoreRunsSixtySecondsWithAllFaultsWithoutAllocating) {
 
     EXPECT_EQ(g_allocations.load(), 0U);
     EXPECT_GT(h.station.frames, 3000U);
+    EXPECT_GT(h.core.stats().statustexts, 3U);  // override, denials, reboot
     EXPECT_GT(h.core.stats().downlink.lost, 0U);
     EXPECT_GT(h.core.stats().decoder.frames_ok, 1000U);
 }
