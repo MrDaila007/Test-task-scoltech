@@ -70,10 +70,11 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: |
           bin=build/release/src/fc_stub
-          file "${bin}"
-          case "${ARCH}" in
-            x86_64)  file "${bin}" | grep -q 'x86-64' ;;
-            aarch64) file "${bin}" | grep -q 'aarch64' ;;
+          info="$(file -b "${bin}")"
+          echo "${info}"
+          case "${ARCH}:${info}" in
+            x86_64:*x86-64*|aarch64:*aarch64*) ;;
+            *) echo "::error::${bin} is not an ${ARCH} binary"; exit 1 ;;
           esac
           name="fc_stub-${TAG}-${ARCH}"
           mkdir -p "dist/${name}"
