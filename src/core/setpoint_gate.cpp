@@ -68,9 +68,9 @@ RejectReason SetpointGate::classify(const SetpointMsg& m, Setpoint& sp) const no
     sp.vel = {m.vx, m.vy, m.vz};
     sp.yaw = m.yaw;
     sp.yaw_rate = m.yaw_rate;
-    if (uses_velocity(sp.kind) && std::hypot(sp.vel[0], sp.vel[1], sp.vel[2]) > limits_.v_max_mps) {
-        return RejectReason::Range;
-    }
+    // A velocity above v_max is accepted and flown at v_max, as PX4 does.
+    // Position targets outside the fence or below ground are refused instead of
+    // triggering a geofence failsafe: a deliberate simplification.
     if (uses_position(sp.kind) && (std::hypot(sp.pos[0], sp.pos[1]) > limits_.geofence_m ||
                                    sp.pos[2] > 0.0 || sp.pos[2] < -limits_.geofence_alt_m)) {
         return RejectReason::Range;

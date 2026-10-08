@@ -34,7 +34,6 @@ enum class RejectReason : std::uint8_t { None, NotForUs, Frame, TypeMask, NonFin
 struct GateLimits {
     std::uint8_t system_id;
     std::uint8_t component_id;
-    double v_max_mps;
     double geofence_m;
     double geofence_alt_m;
 };

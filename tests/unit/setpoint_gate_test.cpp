@@ -17,7 +17,7 @@ constexpr std::uint16_t kVelocityOnly = 3527;
 constexpr std::uint16_t kPositionOnly = 3576;
 constexpr std::uint16_t kPositionVelocity = 3520;
 
-SetpointGate make_gate() { return SetpointGate({1, 1, 12.0, 1000.0, 500.0}); }
+SetpointGate make_gate() { return SetpointGate({1, 1, 1000.0, 500.0}); }
 
 SetpointMsg msg(std::uint16_t mask) {
     SetpointMsg m;
@@ -96,10 +96,12 @@ TEST(SetpointGate, NonFiniteOnlyMattersInUsedFields) {
 
 TEST(SetpointGate, RangeChecks) {
     SetpointGate g = make_gate();
+    // Like PX4, a velocity above the limit is accepted and flown at the limit
+    // (the dynamics saturate it); it does not break the setpoint stream.
     auto m = msg(kVelocityOnly);
     m.vx = 10.0F;
     m.vy = 10.0F;  // |v| = 14.1 > 12
-    EXPECT_EQ(g.submit(0, m).reason, RejectReason::Range);
+    EXPECT_EQ(g.submit(0, m).reason, RejectReason::None);
     m = msg(kPositionOnly);
     m.x = 900.0F;
     m.y = 500.0F;  // 1030 m > 1000 m

@@ -344,3 +344,13 @@ TEST(FcCore, ArmedOnTheGroundWithEstimatorNoiseStaysLanded) {
     h.send(h.client.arm(false));
     EXPECT_EQ(acks(h).back().result, MAV_RESULT_ACCEPTED);
 }
+
+// PX4 flies an over-limit velocity at the limit; the stream stays alive.
+TEST(FcCore, OverLimitVelocityIsFlownAtTheLimitWithoutLosingOffboard) {
+    Harness h(base_config());
+    fly_offboard(h, 5 * kS);
+    h.stream_velocity(15 * kS, 20.0, 15, 0, -1);
+    EXPECT_EQ(h.core.mode(), Mode::Offboard);
+    const auto& v = h.core.truth().vel;
+    EXPECT_NEAR(std::hypot(v[0], v[1], v[2]), 12.0, 0.05);
+}

@@ -15,8 +15,8 @@ DynamicsParams dynamics_params(const VehicleConfig& v) noexcept {
 }
 
 GateLimits gate_limits(const Config& c) noexcept {
-    return {c.identity.system_id, c.identity.component_id, c.vehicle.v_max_mps,
-            c.vehicle.geofence_m, c.vehicle.geofence_alt_m};
+    return {c.identity.system_id, c.identity.component_id, c.vehicle.geofence_m,
+            c.vehicle.geofence_alt_m};
 }
 
 bool direction_matches(LinkDirection d, bool uplink) noexcept {
