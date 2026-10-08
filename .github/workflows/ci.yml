@@ -15,9 +15,6 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # yaml-cpp 0.8.0 declares cmake_minimum_required(VERSION 3.4); CMake >= 4 refuses that
-  # without this floor. Older CMake ignores the variable.
-  CMAKE_POLICY_VERSION_MINIMUM: "3.5"
   # Shared runners are loaded: the 5 s real-time jitter test runs only in the `timing` job.
   CTEST_EXTRA_ARGS: "-LE timing"
 

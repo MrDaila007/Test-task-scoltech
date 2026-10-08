@@ -11,11 +11,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
-env:
-  # yaml-cpp 0.8.0 declares cmake_minimum_required(VERSION 3.4); CMake >= 4 refuses that
-  # without this floor. Older CMake ignores the variable.
-  CMAKE_POLICY_VERSION_MINIMUM: "3.5"
-
 jobs:
   build:
     name: build ${{ matrix.arch }}
@@ -61,7 +56,6 @@ jobs:
           docker run --rm --platform linux/arm64 \
             -v "${GITHUB_WORKSPACE}:/src" -w /src \
             -e CXX=g++ -e "CTEST_EXTRA_ARGS=-LE integration" \
-            -e CMAKE_POLICY_VERSION_MINIMUM \
             -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
             ubuntu:22.04 bash -euo pipefail -c '
               apt-get update

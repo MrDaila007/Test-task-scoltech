@@ -12,11 +12,12 @@ FetchContent_Declare(
     GIT_REPOSITORY https://github.com/mavlink/c_library_v2.git
     GIT_TAG        28eae47457249ab6c8c1cadd104fcbe25eacd7a3
     GIT_SHALLOW    FALSE
+    # Headers only: point MakeAvailable at a directory without a CMakeLists.txt so it
+    # populates the sources but adds no subproject (single-argument
+    # FetchContent_Populate is deprecated since CMake 3.30).
+    SOURCE_SUBDIR  no-cmake-project
 )
-FetchContent_GetProperties(mavlink_c)
-if(NOT mavlink_c_POPULATED)
-    FetchContent_Populate(mavlink_c)
-endif()
+FetchContent_MakeAvailable(mavlink_c)
 add_library(fcstub_mavlink INTERFACE)
 # SYSTEM: the generated headers trigger -Waddress-of-packed-member / -Wpedantic,
 # which -Werror would turn into errors in our own translation units.
@@ -36,6 +37,11 @@ else()
         GIT_REPOSITORY https://github.com/jbeder/yaml-cpp.git
         GIT_TAG        f7320141120f720aecc4c32be25586e7da9eb978 # 0.8.0
     )
+    # yaml-cpp 0.8.0 declares cmake_minimum_required(VERSION 3.4); CMake 4 refuses
+    # anything below 3.5 unless this floor is set. Older CMake ignores the variable.
+    if(NOT DEFINED CMAKE_POLICY_VERSION_MINIMUM)
+        set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
+    endif()
     FetchContent_MakeAvailable(yaml-cpp)
 endif()
 if(NOT TARGET yaml-cpp::yaml-cpp)
