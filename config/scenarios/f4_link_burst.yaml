@@ -2,6 +2,7 @@
 # overflow): bursty losses, delay with jitter (reordering) and corrupted bytes.
 schema_version: 1
 run: {mode: sim, seed: 7, duration_s: 60}
+estimator: {pos_noise_m: 0.5, vel_noise_mps: 0.05, att_noise_rad: 0.01}  # EKF2-like, plain GNSS
 faults:
   - {type: link, start_s: 20, duration_s: 10, direction: down, p_good_to_bad: 0.02,
      p_bad_to_good: 0.2, loss_good: 0.0, loss_bad: 1.0, delay_ms: 20, jitter_ms: 15,

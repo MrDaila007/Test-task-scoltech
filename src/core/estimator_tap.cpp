@@ -1,8 +1,40 @@
 #include "fcstub/estimator_tap.hpp"
 
+#include <cmath>
+
 namespace fcstub {
 
-EstimatorTap::EstimatorTap(const FaultSchedule& schedule) noexcept : schedule_(&schedule) {}
+namespace {
+
+constexpr std::uint64_t kNoiseStream = 0x4E4F495345ULL;  // apart from the per-fault streams
+
+}  // namespace
+
+EstimatorTap::EstimatorTap(const FaultSchedule& schedule, const EstimatorNoise& noise, double dt_s,
+                           std::uint64_t seed)
+    : schedule_(&schedule),
+      noise_(noise),
+      decay_(std::exp(-dt_s / noise.noise_tau_s)),
+      rng_(seed, kNoiseStream) {}
+
+// Advances one Gauss-Markov error and adds it. With sigma 0 the value is left
+// untouched (not even -0.0 + 0.0), so noise-free runs stay bit-identical.
+void EstimatorTap::add_error(double& value, double& state, double sigma) noexcept {
+    if (sigma > 0.0) {
+        state = decay_ * state + sigma * std::sqrt(1.0 - decay_ * decay_) * rng_.normal();
+        value += state;
+    }
+}
+
+void EstimatorTap::apply_noise(VehicleState& est) noexcept {
+    for (std::size_t i = 0; i < 3; ++i) {
+        add_error(est.pos[i], pos_err_[i], noise_.pos_noise_m);
+        add_error(est.vel[i], vel_err_[i], noise_.vel_noise_mps);
+    }
+    add_error(est.roll, att_err_[0], noise_.att_noise_rad);
+    add_error(est.pitch, att_err_[1], noise_.att_noise_rad);
+    add_error(est.yaw, att_err_[2], noise_.att_noise_rad);
+}
 
 VehicleState EstimatorTap::apply_gnss(const VehicleState& truth, TimeNs now) const noexcept {
     VehicleState est = truth;
@@ -26,7 +58,8 @@ VehicleState EstimatorTap::apply_gnss(const VehicleState& truth, TimeNs now) con
 }
 
 const VehicleState& EstimatorTap::update(const VehicleState& truth, TimeNs now) noexcept {
-    const VehicleState live = apply_gnss(truth, now);
+    VehicleState live = apply_gnss(truth, now);
+    apply_noise(live);
     const FaultWindow* freeze = schedule_->active(FaultType::EstimatorFreeze, now);
     if (freeze == nullptr) {
         frozen_ = false;

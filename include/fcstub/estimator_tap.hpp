@@ -10,9 +10,16 @@
 //   F1 freeze     : the estimate is captured when the window opens; position and
 //                   attitude stay frozen, velocity too if freeze_velocity is set.
 // After a window closes the estimate snaps back to truth.
+//
+// Noise (EstimatorNoise) is a first-order Gauss-Markov error on position,
+// velocity and attitude, drawn from its own random stream and applied before
+// the faults, so a frozen estimate freezes its noise too. Zero sigmas draw
+// nothing: noise-free runs are unchanged.
 
+#include "fcstub/config.hpp"
 #include "fcstub/dynamics.hpp"
 #include "fcstub/fault_schedule.hpp"
+#include "fcstub/rng.hpp"
 #include "fcstub/time.hpp"
 
 #include <cstddef>
@@ -21,7 +28,8 @@ namespace fcstub {
 
 class EstimatorTap {
 public:
-    explicit EstimatorTap(const FaultSchedule& schedule) noexcept;
+    explicit EstimatorTap(const FaultSchedule& schedule, const EstimatorNoise& noise = {},
+                          double dt_s = 0.004, std::uint64_t seed = 0);
 
     // Call once per model step; returns the estimate for `now`.
     const VehicleState& update(const VehicleState& truth, TimeNs now) noexcept;
@@ -30,8 +38,16 @@ public:
 
 private:
     VehicleState apply_gnss(const VehicleState& truth, TimeNs now) const noexcept;
+    void apply_noise(VehicleState& est) noexcept;
+    void add_error(double& value, double& state, double sigma) noexcept;
 
     const FaultSchedule* schedule_;
+    EstimatorNoise noise_;
+    double decay_;  // exp(-dt / tau)
+    Rng rng_;
+    Vec3 pos_err_{};
+    Vec3 vel_err_{};
+    Vec3 att_err_{};  // roll, pitch, yaw
     VehicleState estimate_{};
     VehicleState snapshot_{};
     bool frozen_ = false;

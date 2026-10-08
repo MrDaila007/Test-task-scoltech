@@ -1,6 +1,7 @@
 # F3 again, but the onboard side runs TIMESYNC at 1 Hz: the drift becomes visible.
 schema_version: 1
 run: {mode: sim, seed: 7, duration_s: 80}
+estimator: {pos_noise_m: 0.5, vel_noise_mps: 0.05, att_noise_rad: 0.01}  # EKF2-like, plain GNSS
 faults:
   - {type: clock_fault, start_s: 10, duration_s: 60, drift_ppm: 100}
 client:

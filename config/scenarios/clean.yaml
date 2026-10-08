@@ -1,6 +1,7 @@
 # Baseline: no faults. The reference detector must raise no alarm here.
 schema_version: 1
 run: {mode: sim, seed: 7, duration_s: 60}
+estimator: {pos_noise_m: 0.5, vel_noise_mps: 0.05, att_noise_rad: 0.01}  # EKF2-like, plain GNSS
 client:
   - {kind: command, at_s: 3, cmd: arm}
   - {kind: setpoints, start_s: 3.5, end_s: 58, rate_hz: 20, frame: velocity, value: [2, 0, -0.5]}

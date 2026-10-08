@@ -2,6 +2,7 @@
 # (stuck EKF output / sensor driver). Detectable: position stands still at 2 m/s.
 schema_version: 1
 run: {mode: sim, seed: 7, duration_s: 60}
+estimator: {pos_noise_m: 0.5, vel_noise_mps: 0.05, att_noise_rad: 0.01}  # EKF2-like, plain GNSS
 faults:
   - {type: estimator_freeze, start_s: 20, duration_s: 5, freeze_velocity: false}
 client:

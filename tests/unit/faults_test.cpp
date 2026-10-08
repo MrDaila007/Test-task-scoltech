@@ -5,6 +5,7 @@
 
 #include <gtest/gtest.h>
 
+#include <cmath>
 #include <vector>
 
 namespace {
@@ -174,4 +175,55 @@ TEST(Lifecycle, LateUpdateStillDeliversBothEventsInOrder) {
     EXPECT_EQ(life.update(100 * kS), LifeEvent::RebootStarted);
     EXPECT_EQ(life.update(100 * kS), LifeEvent::Rebooted);
     EXPECT_EQ(life.update(100 * kS), LifeEvent::None);
+}
+
+// --- estimator noise ----------------------------------------------------------------
+
+namespace {
+
+EstimatorNoise realistic_noise() { return {0.3, 0.05, 0.005, 1.0}; }
+
+}  // namespace
+
+TEST(EstimatorNoise, ZeroNoiseKeepsTheEstimateExact) {
+    const FaultSchedule sched({}, 1);
+    EstimatorTap tap(sched, EstimatorNoise{}, 0.004, 1);
+    const VehicleState& est = tap.update(moving_truth(kS), kS);
+    EXPECT_DOUBLE_EQ(est.pos[0], 2.0);
+    EXPECT_DOUBLE_EQ(est.vel[0], 2.0);
+}
+
+TEST(EstimatorNoise, HasTheConfiguredSpreadAndIsReproducible) {
+    const FaultSchedule sched({}, 1);
+    EstimatorTap a(sched, realistic_noise(), 0.004, 9);
+    EstimatorTap b(sched, realistic_noise(), 0.004, 9);
+    double sum = 0.0;
+    double sum2 = 0.0;
+    double vsum2 = 0.0;
+    const int n = 250 * 600;  // 10 min at 250 Hz, many correlation times
+    for (int i = 1; i <= n; ++i) {
+        const TimeNs t = static_cast<TimeNs>(i) * 4 * kNsPerMs;
+        const VehicleState truth = moving_truth(t);
+        const VehicleState& ea = a.update(truth, t);
+        const VehicleState& eb = b.update(truth, t);
+        ASSERT_DOUBLE_EQ(ea.pos[0], eb.pos[0]);
+        const double e = ea.pos[0] - truth.pos[0];
+        sum += e;
+        sum2 += e * e;
+        vsum2 += (ea.vel[1] - truth.vel[1]) * (ea.vel[1] - truth.vel[1]);
+    }
+    EXPECT_NEAR(sum / n, 0.0, 0.1);
+    EXPECT_NEAR(std::sqrt(sum2 / n), 0.3, 0.06);
+    EXPECT_NEAR(std::sqrt(vsum2 / n), 0.05, 0.01);
+}
+
+TEST(EstimatorNoise, FreezeAlsoFreezesTheNoise) {
+    const FaultSchedule sched(
+        {fault(FaultType::EstimatorFreeze, 1, 5, EstimatorFreezeParams{true})}, 1);
+    EstimatorTap tap(sched, realistic_noise(), 0.004, 3);
+    (void)tap.update(moving_truth(kS), kS);
+    const VehicleState first = tap.estimate();
+    const VehicleState& later = tap.update(moving_truth(2 * kS), 2 * kS);
+    EXPECT_DOUBLE_EQ(later.pos[0], first.pos[0]);
+    EXPECT_DOUBLE_EQ(later.vel[1], first.vel[1]);
 }

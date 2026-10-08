@@ -65,6 +65,15 @@ struct VehicleConfig {
     double geofence_alt_m = 500.0;
 };
 
+// Estimator noise: first-order Gauss-Markov error on the reported state, the way
+// an EKF output wanders around the truth. Zero = perfect estimate.
+struct EstimatorNoise {
+    double pos_noise_m = 0.0;    // 1-sigma per axis
+    double vel_noise_mps = 0.0;  // 1-sigma per axis
+    double att_noise_rad = 0.0;  // 1-sigma per angle
+    double noise_tau_s = 1.0;    // correlation time
+};
+
 struct BatteryConfig {
     int cells = 6;
     double capacity_mah = 10000.0;
@@ -165,6 +174,7 @@ struct Config {
     TelemetryRates telemetry_hz;
     ModesConfig modes;
     VehicleConfig vehicle;
+    EstimatorNoise estimator;
     BatteryConfig battery;
     RealtimeConfig realtime;
     SimConfig sim;

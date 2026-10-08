@@ -45,8 +45,8 @@ TEST(Cli, ValidateAndParamCount) {
     const std::string cfg = std::string(FCSTUB_SOURCE_DIR) + "/config/default.yaml";
     const RunResult v = run("--config " + cfg + " --validate");
     EXPECT_EQ(v.exit_code, 0);
-    EXPECT_EQ(v.out, "config OK (42 parameters)\n");
-    EXPECT_EQ(run("--config " + cfg + " --print-param-count").out, "42\n");
+    EXPECT_EQ(v.out, "config OK (46 parameters)\n");
+    EXPECT_EQ(run("--config " + cfg + " --print-param-count").out, "46\n");
 }
 
 TEST(Cli, SimPrintsTheGoldenHash) {

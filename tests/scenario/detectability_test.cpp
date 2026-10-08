@@ -13,6 +13,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <vector>
 
 namespace {
 
@@ -70,25 +71,35 @@ double final_position_error(const fs::path& dir) {
     return std::stod(last.substr(start + 1, end - start - 1));
 }
 
-// Value of `column` in the first truth.csv row at or after `t_s`.
-double value_at(const fs::path& dir, double t_s, const std::string& column) {
+// Mean of `column` over the truth.csv rows with t in [t0_s, t1_s).
+double mean_between(const fs::path& dir, double t0_s, double t1_s, const std::string& column) {
     std::ifstream in(dir / "truth.csv");
     std::string header;
     std::getline(in, header);
-    std::string row;
-    while (std::getline(in, row) && std::stod(row.substr(0, row.find(','))) < t_s) {
-    }
     std::stringstream hs(header);
-    std::stringstream ls(row);
     std::string name;
-    std::string value;
-    while (std::getline(hs, name, ',') && std::getline(ls, value, ',')) {
-        if (name == column) {
-            return std::stod(value);
+    std::size_t index = 0;
+    while (std::getline(hs, name, ',') && name != column) {
+        ++index;
+    }
+    double sum = 0.0;
+    int n = 0;
+    std::string row;
+    while (std::getline(in, row)) {
+        std::stringstream ls(row);
+        std::string value;
+        std::vector<std::string> fields;
+        while (std::getline(ls, value, ',')) {
+            fields.push_back(value);
+        }
+        const double t = std::stod(fields.at(0));
+        if (t >= t0_s && t < t1_s) {
+            sum += std::stod(fields.at(index));
+            ++n;
         }
     }
-    ADD_FAILURE() << "no column " << column;
-    return 0.0;
+    EXPECT_GT(n, 0) << "no rows for " << column;
+    return n > 0 ? sum / n : 0.0;
 }
 
 }  // namespace
@@ -107,7 +118,14 @@ TEST(Detectability, F1FreezeIsCaughtWithinOneAndAHalfSeconds) {
 
 TEST(Detectability, F1FrozenHoverIsNotDetectable) {
     const ScenarioRun r = run_scenario("f1_freeze_all_hover");
-    EXPECT_TRUE(r.alarms.empty()) << describe(r.alarms);
+    // Silent for the whole 10 s freeze [20, 30). The frozen velocity carries a
+    // little estimator noise, which the autopilot keeps "correcting": the real
+    // vehicle drifts away, and that only shows as a jump when the estimate
+    // recovers at 30 s.
+    for (const auto& a : r.alarms) {
+        EXPECT_GE(a.t_s, 30.0) << describe(r.alarms);
+    }
+    EXPECT_GE(mean_between(r.dir, 29.0, 30.0, "err_h_m"), 1.0);
 }
 
 TEST(Detectability, F1FrozenHoverIsCaughtByAnActiveProbe) {
@@ -160,8 +178,9 @@ TEST(Detectability, F5GnssDriftIsNotDetectableYetTheErrorGrows) {
     EXPECT_GE(final_position_error(r.dir), 10.0);  // 0.22 m/s for 50 s
     // The autopilot flies its estimate: reported velocity follows the setpoint
     // (2 m/s north), the real vehicle moves 0.2 m/s slower and 0.1 m/s west.
-    EXPECT_NEAR(value_at(r.dir, 50.0, "rep_vn"), 2.0, 0.01);
-    EXPECT_NEAR(value_at(r.dir, 50.0, "rep_ve"), 0.0, 0.01);
-    EXPECT_NEAR(value_at(r.dir, 50.0, "true_vn"), 1.8, 0.01);
-    EXPECT_NEAR(value_at(r.dir, 50.0, "true_ve"), -0.1, 0.01);
+    // Means over 15 s: the estimator noise (0.05 m/s, tau 1 s) averages out.
+    EXPECT_NEAR(mean_between(r.dir, 40.0, 55.0, "rep_vn"), 2.0, 0.03);
+    EXPECT_NEAR(mean_between(r.dir, 40.0, 55.0, "rep_ve"), 0.0, 0.03);
+    EXPECT_NEAR(mean_between(r.dir, 40.0, 55.0, "true_vn"), 1.8, 0.03);
+    EXPECT_NEAR(mean_between(r.dir, 40.0, 55.0, "true_ve"), -0.1, 0.03);
 }

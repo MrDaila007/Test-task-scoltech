@@ -45,6 +45,12 @@ vehicle:
   geofence_m: 1000        # horizontal radius; setpoints outside are rejected
   geofence_alt_m: 500
 
+estimator:                # noise of the reported state (first-order Gauss-Markov); 0 = perfect
+  pos_noise_m: 0          # 1-sigma per axis; EKF2 with plain GNSS: 0.3-1 m
+  vel_noise_mps: 0        # 1-sigma per axis; typical 0.05 m/s
+  att_noise_rad: 0        # 1-sigma per angle
+  noise_tau_s: 1.0        # correlation time
+
 battery:                  # 6S Li-ion
   cells: 6
   capacity_mah: 10000

@@ -30,7 +30,7 @@ FcCore::FcCore(const Config& cfg)
       schedule_(cfg_.faults, cfg_.run.seed),
       clock_(schedule_),
       life_(schedule_),
-      tap_(schedule_),
+      tap_(schedule_, cfg_.estimator, ns_to_seconds(ms_to_ns(cfg_.vehicle.dt_ms)), cfg_.run.seed),
       modes_({ms_to_ns(cfg_.modes.ready_after_ms), ms_to_ns(cfg_.modes.offboard_timeout_ms)}),
       gate_(gate_limits(cfg_)),
       dyn_(dynamics_params(cfg_.vehicle)),

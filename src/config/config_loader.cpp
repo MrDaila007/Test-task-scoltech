@@ -73,6 +73,14 @@ void parse_vehicle(Section s, VehicleConfig& v) {
     s.finish();
 }
 
+void parse_estimator(Section s, EstimatorNoise& e) {
+    s.number("pos_noise_m", e.pos_noise_m, 0.0, 10.0);
+    s.number("vel_noise_mps", e.vel_noise_mps, 0.0, 2.0);
+    s.number("att_noise_rad", e.att_noise_rad, 0.0, 0.2);
+    s.number("noise_tau_s", e.noise_tau_s, 0.01, 100.0);
+    s.finish();
+}
+
 void parse_battery(Section s, BatteryConfig& b) {
     s.number("cells", b.cells, 1, 14);
     s.number("capacity_mah", b.capacity_mah, 100.0, 100000.0);
@@ -140,6 +148,7 @@ Config parse_document(const YAML::Node& doc) {
     parse_link(root.child("link"), cfg.link);
     parse_identity_and_rates(root, cfg);
     parse_vehicle(root.child("vehicle"), cfg.vehicle);
+    parse_estimator(root.child("estimator"), cfg.estimator);
     parse_battery(root.child("battery"), cfg.battery);
     parse_runtime_sections(root, cfg);
     cfg.faults = detail::parse_faults(root);

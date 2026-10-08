@@ -218,3 +218,20 @@ TEST(Config, ErrorMessageNamesThePath) {
         EXPECT_EQ(std::string(e.what()), "config: telemetry_hz.attitude: out of range [1, 250]");
     }
 }
+
+TEST(Config, EstimatorNoiseParsesAndDefaultsToZero) {
+    const auto plain = load_config_from_string(kMinimal);
+    EXPECT_DOUBLE_EQ(plain.estimator.pos_noise_m, 0.0);
+    EXPECT_DOUBLE_EQ(plain.estimator.vel_noise_mps, 0.0);
+    EXPECT_DOUBLE_EQ(plain.estimator.att_noise_rad, 0.0);
+    const auto cfg = load_config_from_string(
+        kMinimal +
+        "estimator: {pos_noise_m: 0.3, vel_noise_mps: 0.05, att_noise_rad: 0.005, "
+        "noise_tau_s: 2}\n");
+    EXPECT_DOUBLE_EQ(cfg.estimator.pos_noise_m, 0.3);
+    EXPECT_DOUBLE_EQ(cfg.estimator.vel_noise_mps, 0.05);
+    EXPECT_DOUBLE_EQ(cfg.estimator.att_noise_rad, 0.005);
+    EXPECT_DOUBLE_EQ(cfg.estimator.noise_tau_s, 2.0);
+    expect_error_at(kMinimal + "estimator: {pos_noise_m: -1}\n", "estimator.pos_noise_m");
+    expect_error_at(kMinimal + "estimator: {noise_tau_s: 0}\n", "estimator.noise_tau_s");
+}

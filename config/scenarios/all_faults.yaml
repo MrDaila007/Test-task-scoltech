@@ -1,6 +1,7 @@
 # Every fault type once, for a combined demonstration run.
 schema_version: 1
 run: {mode: sim, seed: 7, duration_s: 70}
+estimator: {pos_noise_m: 0.5, vel_noise_mps: 0.05, att_noise_rad: 0.01}  # EKF2-like, plain GNSS
 faults:
   - {type: link, start_s: 8, duration_s: 6, direction: both, p_good_to_bad: 0.02,
      p_bad_to_good: 0.2, loss_bad: 1.0, delay_ms: 20, jitter_ms: 15, byte_error_rate: 0.001}
