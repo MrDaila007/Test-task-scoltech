@@ -150,7 +150,9 @@ void FcCore::integrate_to(TimeNs now) noexcept {
         model_time_ += dt_;
         dyn_.step(dt_s, motion_target(), tap_.estimate());
         const Vec3& v = dyn_.state().vel;
-        battery_.step(dt_s, modes_.armed(), std::hypot(v[0], v[1], v[2]));
+        const FaultWindow* bat = schedule_.active(FaultType::Battery, model_time_);
+        battery_.step(dt_s, modes_.armed(), std::hypot(v[0], v[1], v[2]),
+                      bat ? &params_of<BatteryFaultParams>(*bat) : nullptr);
         tap_.update(dyn_.state(), model_time_);
     }
 }

@@ -181,3 +181,26 @@ TEST(Dynamics, PositionLoopClosesOnTheEstimate) {
     }
     EXPECT_NEAR(dyn.state().pos[0], 5.0, 0.1);
 }
+
+// F6: the pack holds less than the autopilot believes. Remaining charge is
+// counted against the configured capacity, the voltage follows the real one.
+TEST(BatteryFault, LostCapacityDrainsTheRealChargeFaster) {
+    fcstub::Battery bat({6, 10000.0, 0.02, 0.5, 18.0, 0.05, 1.0});
+    const fcstub::BatteryFaultParams aged{0.5, 1.0};
+    for (int i = 0; i < 250 * 600; ++i) {
+        bat.step(kDt, true, 0.0, &aged);
+    }
+    const double reported_drop = 1.0 - bat.soc();
+    EXPECT_NEAR(1.0 - bat.true_soc(), 2.0 * reported_drop, 1e-6);
+    EXPECT_NEAR(bat.voltage_v(), 6 * (3.5 + 0.7 * bat.true_soc()) - 18.0 * 0.02, 1e-6);
+}
+
+TEST(BatteryFault, HighInternalResistanceSagsTheVoltageOnly) {
+    fcstub::Battery healthy({6, 10000.0, 0.02, 0.5, 18.0, 0.05, 1.0});
+    fcstub::Battery weak({6, 10000.0, 0.02, 0.5, 18.0, 0.05, 1.0});
+    const fcstub::BatteryFaultParams sag{1.0, 5.0};
+    healthy.step(kDt, true, 0.0);
+    weak.step(kDt, true, 0.0, &sag);
+    EXPECT_NEAR(healthy.voltage_v() - weak.voltage_v(), 18.0 * 0.02 * 4.0, 1e-9);
+    EXPECT_DOUBLE_EQ(healthy.soc(), weak.soc());
+}

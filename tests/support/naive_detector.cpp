@@ -26,6 +26,10 @@ constexpr double kStaleSetpointS = 0.5;
 constexpr std::uint16_t kVelocityOnlyMask = 3527;  // position and acceleration ignored
 constexpr std::uint32_t kPx4MainModeMask = 0x00FF0000U;
 constexpr std::uint32_t kPx4Offboard = 6U << 16U;
+constexpr double kCellEmptyV = 3.5;
+constexpr double kCellSpanV = 0.7;
+constexpr double kBatteryMargin = 0.25;
+constexpr double kBatteryWindowS = 5.0;
 constexpr double kMetresPerDegLat = 111195.0;
 
 struct VelocityCommand {
@@ -63,6 +67,9 @@ public:
                 break;
             case MAVLINK_MSG_ID_TIMESYNC:
                 check_timesync(t, m);
+                break;
+            case MAVLINK_MSG_ID_BATTERY_STATUS:
+                check_battery(t, m);
                 break;
             default:
                 break;
@@ -187,6 +194,31 @@ private:
         }
     }
 
+    void check_battery(double t, const mavlink_message_t& m) {
+        mavlink_battery_status_t b{};
+        mavlink_msg_battery_status_decode(&m, &b);
+        double sum_mv = 0.0;
+        int cells = 0;
+        for (std::size_t i = 0; i < 10; ++i) {
+            const std::uint16_t mv = b.voltages[i];  // packed struct: no references
+            if (mv != UINT16_MAX) {
+                sum_mv += mv;
+                ++cells;
+            }
+        }
+        if (cells == 0 || b.battery_remaining < 0) {
+            return;
+        }
+        const double soc_from_voltage = (sum_mv / cells / 1000.0 - kCellEmptyV) / kCellSpanV;
+        if (b.battery_remaining / 100.0 - soc_from_voltage <= kBatteryMargin) {
+            battery_bad_since_.reset();
+        } else if (!battery_bad_since_) {
+            battery_bad_since_ = t;
+        } else if (t - *battery_bad_since_ >= kBatteryWindowS) {
+            raise(t, Alarm::BatteryMismatch);
+        }
+    }
+
     void check_timesync(double t, const mavlink_message_t& m) {
         mavlink_timesync_t ts{};
         mavlink_msg_timesync_decode(&m, &ts);
@@ -212,6 +244,7 @@ private:
     std::optional<double> offboard_since_;
     std::optional<VelocityCommand> cmd_;
     std::optional<double> tracking_bad_since_;
+    std::optional<double> battery_bad_since_;
     std::deque<double> gaps_;
 };
 
@@ -277,6 +310,8 @@ const char* alarm_name(Alarm a) {
             return "clock_drift";
         case Alarm::TrackingError:
             return "tracking_error";
+        case Alarm::BatteryMismatch:
+            return "battery_mismatch";
     }
     return "?";
 }

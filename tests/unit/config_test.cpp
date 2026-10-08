@@ -235,3 +235,17 @@ TEST(Config, EstimatorNoiseParsesAndDefaultsToZero) {
     expect_error_at(kMinimal + "estimator: {pos_noise_m: -1}\n", "estimator.pos_noise_m");
     expect_error_at(kMinimal + "estimator: {noise_tau_s: 0}\n", "estimator.noise_tau_s");
 }
+
+TEST(Config, BatteryFaultParses) {
+    const auto cfg =
+        load_config_from_string(kMinimal +
+                                "faults:\n  - {type: battery, start_s: 0, capacity_factor: 0.5, "
+                                "r_int_factor: 4}\n");
+    ASSERT_EQ(cfg.faults.size(), 1U);
+    EXPECT_EQ(cfg.faults[0].type, fcstub::FaultType::Battery);
+    const auto& p = std::get<fcstub::BatteryFaultParams>(cfg.faults[0].params);
+    EXPECT_DOUBLE_EQ(p.capacity_factor, 0.5);
+    EXPECT_DOUBLE_EQ(p.r_int_factor, 4.0);
+    expect_error_at(kMinimal + "faults:\n  - {type: battery, start_s: 0, capacity_factor: 0}\n",
+                    "faults[0].capacity_factor");
+}

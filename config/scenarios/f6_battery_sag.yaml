@@ -1,0 +1,12 @@
+# F6b: a weak cell or a bad power joint: internal resistance six times nominal
+# from 20 s. Under hover current the pack voltage drops by 1.8 V while the
+# remaining charge (coulomb counting) is unaffected.
+schema_version: 1
+run: {mode: sim, seed: 7, duration_s: 60}
+estimator: {pos_noise_m: 0.5, vel_noise_mps: 0.05, att_noise_rad: 0.01}  # EKF2-like, plain GNSS
+faults:
+  - {type: battery, start_s: 20, duration_s: 0, r_int_factor: 6}
+client:
+  - {kind: command, at_s: 3, cmd: arm}
+  - {kind: setpoints, start_s: 3.5, end_s: 58, rate_hz: 20, frame: velocity, value: [2, 0, -0.5]}
+  - {kind: command, at_s: 4, cmd: offboard}

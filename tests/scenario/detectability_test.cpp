@@ -184,3 +184,17 @@ TEST(Detectability, F5GnssDriftIsNotDetectableYetTheErrorGrows) {
     EXPECT_NEAR(mean_between(r.dir, 40.0, 55.0, "true_vn"), 1.8, 0.03);
     EXPECT_NEAR(mean_between(r.dir, 40.0, 55.0, "true_ve"), -0.1, 0.03);
 }
+
+TEST(Detectability, F6LostCapacityIsCaughtByVoltageAgainstRemaining) {
+    const ScenarioRun r = run_scenario("f6_battery_capacity");
+    const double t = first(r.alarms, Alarm::BatteryMismatch);
+    EXPECT_GE(t, 5.0) << describe(r.alarms);
+    EXPECT_LE(t, 90.0) << describe(r.alarms);
+}
+
+TEST(Detectability, F6VoltageSagIsCaughtUnderLoad) {
+    const ScenarioRun r = run_scenario("f6_battery_sag");
+    const double t = first(r.alarms, Alarm::BatteryMismatch);
+    EXPECT_GE(t, 20.0) << describe(r.alarms);
+    EXPECT_LE(t, 26.0) << describe(r.alarms);
+}

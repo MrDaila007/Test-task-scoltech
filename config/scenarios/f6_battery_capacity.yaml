@@ -1,0 +1,14 @@
+# F6a: the pack holds half of the configured capacity (aged pack, or BAT_CAPACITY
+# set for a bigger pack). Remaining % is counted against the configured capacity
+# and looks healthy; only the cell voltage tells the truth. A small 1500 mAh pack
+# makes the effect visible within two minutes.
+schema_version: 1
+run: {mode: sim, seed: 7, duration_s: 120}
+estimator: {pos_noise_m: 0.5, vel_noise_mps: 0.05, att_noise_rad: 0.01}  # EKF2-like, plain GNSS
+battery: {capacity_mah: 1500}
+faults:
+  - {type: battery, start_s: 0, duration_s: 0, capacity_factor: 0.5}
+client:
+  - {kind: command, at_s: 3, cmd: arm}
+  - {kind: setpoints, start_s: 3.5, end_s: 118, rate_hz: 20, frame: velocity, value: [0, 0, -0.2]}
+  - {kind: command, at_s: 4, cmd: offboard}

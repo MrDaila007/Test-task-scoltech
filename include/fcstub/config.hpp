@@ -99,7 +99,7 @@ struct SimConfig {
 
 // --- faults ------------------------------------------------------------------
 
-enum class FaultType { EstimatorFreeze, FcReboot, ClockFault, Link, Gnss };
+enum class FaultType { EstimatorFreeze, FcReboot, ClockFault, Link, Gnss, Battery };
 enum class LinkDirection { Down, Up, Both };
 enum class GnssKind { Jump, Drift };
 
@@ -133,8 +133,15 @@ struct GnssFaultParams {
     Vec3 drift_mps{};
 };
 
+// F6: the real pack differs from what the autopilot believes. Remaining charge is
+// still counted against the configured capacity; voltage follows the real pack.
+struct BatteryFaultParams {
+    double capacity_factor = 1.0;  // real capacity / configured (aged or mis-set pack)
+    double r_int_factor = 1.0;     // internal resistance multiplier (weak cell, bad joint)
+};
+
 using FaultParams = std::variant<EstimatorFreezeParams, FcRebootParams, ClockFaultParams,
-                                 LinkFaultParams, GnssFaultParams>;
+                                 LinkFaultParams, GnssFaultParams, BatteryFaultParams>;
 
 struct FaultSpec {
     FaultType type = FaultType::EstimatorFreeze;

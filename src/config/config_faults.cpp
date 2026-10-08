@@ -14,7 +14,8 @@ const EnumNames<FaultType> kFaultTypes = {{"estimator_freeze", FaultType::Estima
                                           {"fc_reboot", FaultType::FcReboot},
                                           {"clock_fault", FaultType::ClockFault},
                                           {"link", FaultType::Link},
-                                          {"gnss", FaultType::Gnss}};
+                                          {"gnss", FaultType::Gnss},
+                                          {"battery", FaultType::Battery}};
 const EnumNames<LinkDirection> kDirections = {
     {"down", LinkDirection::Down}, {"up", LinkDirection::Up}, {"both", LinkDirection::Both}};
 const EnumNames<GnssKind> kGnssKinds = {{"jump", GnssKind::Jump}, {"drift", GnssKind::Drift}};
@@ -78,6 +79,12 @@ FaultParams parse_fault_params(FaultType type, Section& s, FaultSpec& spec) {
             return parse_link_fault(s);
         case FaultType::Gnss:
             return parse_gnss_fault(s);
+        case FaultType::Battery: {
+            BatteryFaultParams p;
+            s.number("capacity_factor", p.capacity_factor, 0.05, 1.0);
+            s.number("r_int_factor", p.r_int_factor, 1.0, 50.0);
+            return p;
+        }
     }
     return EstimatorFreezeParams{};
 }

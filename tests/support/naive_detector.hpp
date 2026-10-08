@@ -15,6 +15,9 @@
 //   TrackingError     in OFFBOARD, reported horizontal velocity differs from the
 //                     commanded one by more than 0.3 m/s for 1 s, once the same
 //                     velocity setpoint has been held for 2 s (the response settled)
+//   BatteryMismatch   reported remaining charge exceeds the charge implied by the
+//                     cell voltage (Li-ion 3.5..4.2 V, linear) by more than 25 %
+//                     for 5 s; the margin covers the IR drop at cruise current
 
 #include <cstdint>
 #include <string>
@@ -29,7 +32,8 @@ enum class Alarm {
     FrozenPosition,
     PositionJump,
     ClockDrift,
-    TrackingError
+    TrackingError,
+    BatteryMismatch
 };
 
 struct AlarmEvent {

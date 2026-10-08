@@ -67,7 +67,7 @@ struct CoreStats {
     LinkStats downlink;
 };
 
-// Bit i set = fault type i active (EstimatorFreeze=0 ... Gnss=4).
+// Bit i set = fault type i active (EstimatorFreeze=0 ... Battery=5).
 using FaultMask = std::uint32_t;
 
 class FcCore final : private RxHandler {
