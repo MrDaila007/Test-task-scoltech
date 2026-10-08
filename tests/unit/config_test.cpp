@@ -262,3 +262,17 @@ TEST(Config, ModeOverrideFaultParses) {
     expect_error_at(kMinimal + "faults:\n  - {type: mode_override, start_s: 5, to: offboard}\n",
                     "faults[0].to");
 }
+
+// A copy-pasted duplicate key must not silently pick one of two values.
+TEST(Config, DuplicateKeysAreRejectedWithTheirPath) {
+    expect_error_at(
+        "schema_version: 1\nmodes:\n  offboard_timeout_ms: 500\n"
+        "  offboard_timeout_ms: 5000\n",
+        "modes.offboard_timeout_ms");
+    expect_error_at("schema_version: 1\nmodes: {ready_after_ms: 10}\nmodes: {ready_after_ms: 20}\n",
+                    "modes");
+    expect_error_at(kMinimal +
+                        "faults:\n  - {type: gnss, start_s: 1, start_s: 2, kind: jump, "
+                        "offset_m: [1, 0, 0]}\n",
+                    "faults[0].start_s");
+}

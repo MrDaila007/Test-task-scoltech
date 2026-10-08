@@ -7,6 +7,7 @@
 
 #include <cstdint>
 #include <limits>
+#include <set>
 
 namespace fcstub {
 
@@ -129,6 +130,29 @@ std::size_t count_leaves(const YAML::Node& node) {
     return 1;
 }
 
+// yaml-cpp keeps both entries of a duplicated key and lookups see only one of
+// them, so a copy-pasted key would silently pick a value. Reject it with its path.
+void reject_duplicate_keys(const YAML::Node& node, const std::string& path) {
+    if (node.IsSequence()) {
+        for (std::size_t i = 0; i < node.size(); ++i) {
+            reject_duplicate_keys(node[i], detail::index_path(path, i));
+        }
+        return;
+    }
+    if (!node.IsMap()) {
+        return;
+    }
+    std::set<std::string> seen;
+    for (const auto& kv : node) {
+        const std::string key = kv.first.Scalar();
+        const std::string key_path = detail::join_path(path, key);
+        if (!seen.insert(key).second) {
+            throw ConfigError(key_path, "duplicate key");
+        }
+        reject_duplicate_keys(kv.second, key_path);
+    }
+}
+
 void check_schema_version(Section& root) {
     root.require("schema_version");
     int version = 0;
@@ -145,6 +169,7 @@ Config parse_document(const YAML::Node& doc) {
         throw ConfigError("", std::to_string(leaves) + " parameters, at most " +
                                   std::to_string(kMaxLeafParams) + " allowed");
     }
+    reject_duplicate_keys(doc, "");
     Section root(doc, "");
     check_schema_version(root);
     Config cfg;
