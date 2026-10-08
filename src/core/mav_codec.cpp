@@ -216,6 +216,37 @@ FrameBuf MavEncoder::battery_status(const BatteryData& d) noexcept {
     return to_frame(msg);
 }
 
+FrameBuf MavEncoder::sys_status(const SysStatusData& d) noexcept {
+    // The sensors a PX4 multicopter reports; the stub has no sensor failures, so
+    // all present ones are enabled and healthy.
+    constexpr std::uint32_t kSensors =
+        MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL |
+        MAV_SYS_STATUS_SENSOR_3D_MAG | MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE |
+        MAV_SYS_STATUS_SENSOR_GPS | MAV_SYS_STATUS_SENSOR_ANGULAR_RATE_CONTROL |
+        MAV_SYS_STATUS_SENSOR_ATTITUDE_STABILIZATION | MAV_SYS_STATUS_SENSOR_XY_POSITION_CONTROL |
+        MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS | MAV_SYS_STATUS_AHRS | MAV_SYS_STATUS_SENSOR_BATTERY;
+    mavlink_sys_status_t s{};
+    s.onboard_control_sensors_present = kSensors;
+    s.onboard_control_sensors_enabled = kSensors;
+    s.onboard_control_sensors_health = kSensors;
+    s.voltage_battery = saturate<std::uint16_t>(d.voltage_v * 1000.0);
+    s.current_battery = saturate<std::int16_t>(d.current_a * 100.0);
+    s.battery_remaining = saturate<std::int8_t>(std::clamp(d.remaining, 0.0, 1.0) * 100.0);
+    mavlink_message_t msg{};
+    mavlink_msg_sys_status_encode_status(system_id_, component_id_, as_status(status_), &msg, &s);
+    return to_frame(msg);
+}
+
+FrameBuf MavEncoder::extended_sys_state(std::uint8_t landed_state) noexcept {
+    mavlink_extended_sys_state_t e{};
+    e.vtol_state = MAV_VTOL_STATE_UNDEFINED;
+    e.landed_state = landed_state;
+    mavlink_message_t msg{};
+    mavlink_msg_extended_sys_state_encode_status(system_id_, component_id_, as_status(status_),
+                                                 &msg, &e);
+    return to_frame(msg);
+}
+
 FrameBuf MavEncoder::statustext(const StatusTextData& d) noexcept {
     std::array<char, kStatusTextLen> text{};
     std::memcpy(text.data(), d.text.data(), std::min(d.text.size(), kStatusTextLen));

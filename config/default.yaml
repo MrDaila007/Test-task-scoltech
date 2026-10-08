@@ -27,6 +27,8 @@ telemetry_hz:
   attitude: 50
   global_position: 10
   battery: 2
+  sys_status: 1             # sensor health and battery summary (MAVSDK health)
+  extended_sys_state: 1     # landed state (MAVSDK in_air)
 
 modes:
   ready_after_ms: 2000            # boot -> "ready" (STANDBY)

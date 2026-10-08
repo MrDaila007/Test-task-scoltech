@@ -87,6 +87,13 @@ void FcCore::emit_telemetry(Stream stream, TimeNs deadline) noexcept {
                                           battery_.soc()}),
                  tag);
             break;
+        case Stream::SysStatus:
+            send(encoder_.sys_status({battery_.voltage_v(), battery_.current_a(), battery_.soc()}),
+                 tag);
+            break;
+        case Stream::ExtendedSysState:
+            send(encoder_.extended_sys_state(in_air() ? kLandedInAir : kLandedOnGround), tag);
+            break;
     }
 }
 

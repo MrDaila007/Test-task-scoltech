@@ -37,8 +37,15 @@
 
 namespace fcstub {
 
-enum class Stream : std::uint8_t { Heartbeat = 0, Attitude = 1, GlobalPosition = 2, Battery = 3 };
-inline constexpr std::size_t kStreamCount = 4;
+enum class Stream : std::uint8_t {
+    Heartbeat = 0,
+    Attitude = 1,
+    GlobalPosition = 2,
+    Battery = 3,
+    SysStatus = 4,
+    ExtendedSysState = 5
+};
+inline constexpr std::size_t kStreamCount = 6;
 
 const char* stream_name(Stream stream) noexcept;
 
@@ -60,7 +67,7 @@ struct CoreStats {
     std::uint64_t tx_suppressed = 0;  // produced while rebooting
     std::uint64_t statustexts = 0;
     std::uint64_t missed_deadlines = 0;
-    std::array<std::uint64_t, 4> missed_per_stream{};  // indexed by Stream
+    std::array<std::uint64_t, kStreamCount> missed_per_stream{};  // indexed by Stream
     DecoderStats decoder;
     GateStats gate;
     LinkStats uplink;
@@ -110,6 +117,7 @@ private:
     void handle_overrides(TimeNs now) noexcept;
     void flush_downlink(TimeNs now, FrameSink& sink) noexcept;
     MotionTarget motion_target() const noexcept;
+    bool in_air() const noexcept;
     const LinkFaultParams* link_fault(TimeNs now, bool uplink, Rng** rng) noexcept;
 
     // fc_core_rx.cpp

@@ -41,6 +41,8 @@ struct TelemetryRates {
     double attitude = 50.0;
     double global_position = 10.0;
     double battery = 2.0;
+    double sys_status = 1.0;
+    double extended_sys_state = 1.0;
 };
 
 struct ModesConfig {

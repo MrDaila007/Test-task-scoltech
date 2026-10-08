@@ -34,7 +34,8 @@ enum class DenyReason : std::uint8_t {
     Disarmed,
     NoSetpointStream,
     NotRequestable,
-    Overridden
+    Overridden,
+    InAir
 };
 
 struct ModeChange {

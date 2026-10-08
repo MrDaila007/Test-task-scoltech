@@ -83,6 +83,15 @@ struct BatteryData {
     double remaining;  // 0..1
 };
 
+struct SysStatusData {
+    double voltage_v;  // pack voltage under load
+    double current_a;
+    double remaining;  // 0..1
+};
+
+inline constexpr std::uint8_t kLandedOnGround = 1;  // MAV_LANDED_STATE_ON_GROUND
+inline constexpr std::uint8_t kLandedInAir = 2;     // MAV_LANDED_STATE_IN_AIR
+
 struct StatusTextData {
     std::uint8_t severity;  // MAV_SEVERITY
     std::string_view text;  // truncated to 50 characters
@@ -107,6 +116,8 @@ public:
     FrameBuf attitude(const AttitudeData& d) noexcept;
     FrameBuf global_position_int(const GlobalPositionData& d) noexcept;
     FrameBuf battery_status(const BatteryData& d) noexcept;
+    FrameBuf sys_status(const SysStatusData& d) noexcept;
+    FrameBuf extended_sys_state(std::uint8_t landed_state) noexcept;
     FrameBuf statustext(const StatusTextData& d) noexcept;
     FrameBuf command_ack(const CommandAckData& d) noexcept;
     FrameBuf timesync(const TimesyncData& d) noexcept;

@@ -206,5 +206,5 @@ TEST(SimDriver, GoldenScenarioHash) {
         load_config(std::string(FCSTUB_SOURCE_DIR) + "/tests/fixtures/golden_all_faults.yaml");
     cfg.sim.out_dir = fresh_dir("golden").string();
     const SimResult res = SimDriver(cfg).run();
-    EXPECT_EQ(res.sha256, "7b1052e16e59f59ceee8bfe433e24e08ad94532e7d3fb551744711727acc891a");
+    EXPECT_EQ(res.sha256, "433dd363ecf6826aca4a3227351ee54b4364a505cce18b7795baa9f979d05e7c");
 }

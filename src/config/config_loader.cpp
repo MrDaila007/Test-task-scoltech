@@ -49,6 +49,8 @@ void parse_identity_and_rates(Section& root, Config& cfg) {
     hz.number("attitude", cfg.telemetry_hz.attitude, 1.0, 250.0);
     hz.number("global_position", cfg.telemetry_hz.global_position, 1.0, 50.0);
     hz.number("battery", cfg.telemetry_hz.battery, 0.1, 10.0);
+    hz.number("sys_status", cfg.telemetry_hz.sys_status, 0.1, 10.0);
+    hz.number("extended_sys_state", cfg.telemetry_hz.extended_sys_state, 0.1, 10.0);
     hz.finish();
 
     Section modes = root.child("modes");

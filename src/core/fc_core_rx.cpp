@@ -22,6 +22,8 @@ const char* deny_text(DenyReason reason) noexcept {
             return "Denied: mode not supported";
         case DenyReason::Overridden:
             return "Denied: autopilot override";
+        case DenyReason::InAir:
+            return "Denied: in air (force 21196)";
         case DenyReason::None:
             break;
     }
@@ -87,6 +89,11 @@ ModeChange FcCore::execute_command(const CommandLongMsg& msg) noexcept {
         const long arg = std::lround(msg.param[0]);
         if (arg != 0 && arg != 1) {
             return {AckResult::Denied, DenyReason::None};
+        }
+        // PX4 refuses a disarm in the air unless it is forced with the magic number.
+        constexpr long kForceDisarm = 21196;
+        if (arg == 0 && modes_.armed() && in_air() && std::lround(msg.param[1]) != kForceDisarm) {
+            return {AckResult::Denied, DenyReason::InAir};
         }
         return modes_.request_arm(arg == 1, rx_now_);
     }

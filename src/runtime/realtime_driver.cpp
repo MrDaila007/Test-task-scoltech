@@ -139,8 +139,10 @@ std::uint64_t rejected_setpoints(const GateStats& g) noexcept {
 
 std::string build_report(const HostInfo& host, double duration_s, const SocketSink& sink,
                          const CoreStats& st, const Config& cfg) {
-    const double rates[kStreamCount] = {cfg.telemetry_hz.heartbeat, cfg.telemetry_hz.attitude,
-                                        cfg.telemetry_hz.global_position, cfg.telemetry_hz.battery};
+    const double rates[kStreamCount] = {
+        cfg.telemetry_hz.heartbeat,       cfg.telemetry_hz.attitude,
+        cfg.telemetry_hz.global_position, cfg.telemetry_hz.battery,
+        cfg.telemetry_hz.sys_status,      cfg.telemetry_hz.extended_sys_state};
     std::string out;
     char buf[512];
     std::snprintf(

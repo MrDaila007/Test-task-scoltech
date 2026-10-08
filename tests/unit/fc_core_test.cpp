@@ -70,6 +70,8 @@ TEST(FcCore, TelemetryRatesOverTenSeconds) {
     EXPECT_EQ(h.station.of(MAVLINK_MSG_ID_ATTITUDE).size(), 500U);
     EXPECT_EQ(h.station.of(MAVLINK_MSG_ID_GLOBAL_POSITION_INT).size(), 100U);
     EXPECT_EQ(h.station.of(MAVLINK_MSG_ID_BATTERY_STATUS).size(), 20U);
+    EXPECT_EQ(h.station.of(MAVLINK_MSG_ID_SYS_STATUS).size(), 10U);
+    EXPECT_EQ(h.station.of(MAVLINK_MSG_ID_EXTENDED_SYS_STATE).size(), 10U);
     for (const auto& r : h.station.of(MAVLINK_MSG_ID_ATTITUDE)) {
         ASSERT_EQ(r.t, r.tag.deadline);  // the sim emits exactly at the deadline
         ASSERT_EQ(r.tag.deadline % (20 * kMs), 0);
@@ -277,4 +279,43 @@ TEST(FcCore, ModeOverrideOnTheGroundDoesNothing) {
     h.run_until(6 * kS);
     EXPECT_EQ(h.core.mode(), Mode::Ready);
     EXPECT_FALSE(has_text(h, "Low battery"));
+}
+
+// As PX4: a plain disarm is refused in the air, the forced one (21196) is not.
+TEST(FcCore, DisarmInTheAirNeedsForce) {
+    Harness h(base_config());
+    fly_offboard(h, 8 * kS);  // climbing at 1 m/s
+    h.send(h.client.arm(false));
+    EXPECT_EQ(acks(h).back().result, MAV_RESULT_DENIED);
+    EXPECT_TRUE(has_text(h, "Denied: in air"));
+    EXPECT_TRUE(h.core.armed());
+    h.send(h.client.command(MAV_CMD_COMPONENT_ARM_DISARM, 0.0F, 21196.0F));
+    EXPECT_EQ(acks(h).back().result, MAV_RESULT_ACCEPTED);
+    EXPECT_FALSE(h.core.armed());
+}
+
+TEST(FcCore, ExtendedSysStateReportsTheLandedState) {
+    Harness h(base_config());
+    h.run_until(3 * kS);
+    auto landed = [&h] {
+        const auto es = h.station.of(MAVLINK_MSG_ID_EXTENDED_SYS_STATE);
+        return es.empty() ? -1 : mavlink_msg_extended_sys_state_get_landed_state(&es.back().msg);
+    };
+    EXPECT_EQ(landed(), MAV_LANDED_STATE_ON_GROUND);
+    fly_offboard(h, 8 * kS);
+    EXPECT_EQ(landed(), MAV_LANDED_STATE_IN_AIR);
+}
+
+TEST(FcCore, SysStatusCarriesBatteryAndHealthySensors) {
+    Harness h(base_config());
+    h.run_until(3 * kS);
+    const auto ss = h.station.of(MAVLINK_MSG_ID_SYS_STATUS);
+    ASSERT_FALSE(ss.empty());
+    mavlink_sys_status_t s{};
+    mavlink_msg_sys_status_decode(&ss.back().msg, &s);
+    EXPECT_EQ(s.battery_remaining, 100);
+    EXPECT_NEAR(s.voltage_battery, 6 * 4200 - 10, 20);
+    const std::uint32_t needed =
+        MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL | MAV_SYS_STATUS_SENSOR_GPS;
+    EXPECT_EQ(s.onboard_control_sensors_health & needed, needed);
 }

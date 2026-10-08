@@ -44,6 +44,8 @@ FcCore::FcCore(const Config& cfg)
     scheduler_.add(period_from_hz(cfg_.telemetry_hz.attitude), 0);
     scheduler_.add(period_from_hz(cfg_.telemetry_hz.global_position), 0);
     scheduler_.add(period_from_hz(cfg_.telemetry_hz.battery), 0);
+    scheduler_.add(period_from_hz(cfg_.telemetry_hz.sys_status), 0);
+    scheduler_.add(period_from_hz(cfg_.telemetry_hz.extended_sys_state), 0);
     modes_.boot(0);
     clock_.boot(0);
 }
@@ -112,6 +114,9 @@ void FcCore::process_uplink(TimeNs now) noexcept {
         decoder_.feed(scratch_.data.data(), scratch_.len, *this);
     }
 }
+
+// Land detector: the model's ground is a hard floor at down = 0.
+bool FcCore::in_air() const noexcept { return dyn_.state().pos[2] < -0.05; }
 
 MotionTarget FcCore::motion_target() const noexcept {
     MotionTarget t;
@@ -254,6 +259,10 @@ const char* stream_name(Stream stream) noexcept {
             return "global_position";
         case Stream::Battery:
             return "battery";
+        case Stream::SysStatus:
+            return "sys_status";
+        case Stream::ExtendedSysState:
+            return "extended_sys_state";
     }
     return "?";
 }

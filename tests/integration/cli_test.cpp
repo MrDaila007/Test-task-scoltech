@@ -45,8 +45,8 @@ TEST(Cli, ValidateAndParamCount) {
     const std::string cfg = std::string(FCSTUB_SOURCE_DIR) + "/config/default.yaml";
     const RunResult v = run("--config " + cfg + " --validate");
     EXPECT_EQ(v.exit_code, 0);
-    EXPECT_EQ(v.out, "config OK (46 parameters)\n");
-    EXPECT_EQ(run("--config " + cfg + " --print-param-count").out, "46\n");
+    EXPECT_EQ(v.out, "config OK (48 parameters)\n");
+    EXPECT_EQ(run("--config " + cfg + " --print-param-count").out, "48\n");
 }
 
 TEST(Cli, SimPrintsTheGoldenHash) {
@@ -54,7 +54,7 @@ TEST(Cli, SimPrintsTheGoldenHash) {
     const RunResult r =
         run("--config " + kFixtures + "golden_all_faults.yaml --sim --out " + out.string());
     EXPECT_EQ(r.exit_code, 0);
-    EXPECT_EQ(r.out, "sha256 7b1052e16e59f59ceee8bfe433e24e08ad94532e7d3fb551744711727acc891a\n");
+    EXPECT_EQ(r.out, "sha256 433dd363ecf6826aca4a3227351ee54b4364a505cce18b7795baa9f979d05e7c\n");
 }
 
 TEST(Cli, PortInUseIs3) {
