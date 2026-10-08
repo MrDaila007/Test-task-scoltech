@@ -67,7 +67,9 @@ HostInfo host_info() {
 
 class SocketSink final : public FrameSink {
 public:
-    SocketSink(UdpLink& link, const FcCore& core, TimeNs t0) : link_(link), core_(core), t0_(t0) {}
+    SocketSink(UdpLink& link, const FcCore& core) : link_(link), core_(core) {}
+
+    void start(TimeNs t0) noexcept { t0_ = t0; }
 
     void emit(TimeNs /*t*/, const std::uint8_t* data, std::size_t len,
               const PacketTag& tag) noexcept override {
@@ -90,7 +92,7 @@ public:
 private:
     UdpLink& link_;
     const FcCore& core_;
-    TimeNs t0_;
+    TimeNs t0_ = 0;
 };
 
 void enable_realtime(const RealtimeConfig& rt, HostInfo& host) {
@@ -195,11 +197,13 @@ int RealtimeDriver::run(std::string& error) {
     auto core = std::make_unique<FcCore>(cfg_);
     std::vector<std::uint8_t> rx(kMaxLinkPacket + 1);
     HostInfo host = host_info();
-    const TimeNs t0 = monotonic_ns();
-    auto sink = std::make_unique<SocketSink>(link, *core, t0);
+    auto sink = std::make_unique<SocketSink>(link, *core);
     sigset_t wait_mask;
     install_signals(wait_mask);
     enable_realtime(cfg_.realtime, host);
+    // Time zero after mlockall and SCHED_FIFO: their cost is not send jitter.
+    const TimeNs t0 = monotonic_ns();
+    sink->start(t0);
     const TimeNs end = cfg_.run.duration_s > 0 ? seconds_to_ns(cfg_.run.duration_s)
                                                : std::numeric_limits<TimeNs>::max();
     const TimeNs spin = cfg_.realtime.spin_us * kNsPerUs;
