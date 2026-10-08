@@ -354,3 +354,22 @@ TEST(FcCore, OverLimitVelocityIsFlownAtTheLimitWithoutLosingOffboard) {
     const auto& v = h.core.truth().vel;
     EXPECT_NEAR(std::hypot(v[0], v[1], v[2]), 12.0, 0.05);
 }
+
+// A rebooted autopilot remembers nothing: a retransmission that arrives after a
+// short reboot is executed afresh, not answered from the pre-reboot cache.
+TEST(FcCore, RebootForgetsTheCommandRetransmissionCache) {
+    Config cfg = base_config();
+    FaultSpec f;
+    f.type = FaultType::FcReboot;
+    f.start_s = 3.1;
+    f.params = FcRebootParams{300};
+    cfg.faults.push_back(f);
+    Harness h(cfg);
+    h.run_until(3 * kS);
+    h.send(h.client.command(MAV_CMD_COMPONENT_ARM_DISARM, 1.0F, 0, 0, 0));
+    EXPECT_EQ(acks(h).back().result, MAV_RESULT_ACCEPTED);
+    h.run_until(3 * kS + 600 * kMs);  // rebooted at 3.4 s, not ready again yet
+    h.send(h.client.command(MAV_CMD_COMPONENT_ARM_DISARM, 1.0F, 0, 0, 1));
+    EXPECT_EQ(acks(h).back().result, MAV_RESULT_TEMPORARILY_REJECTED);
+    EXPECT_FALSE(h.core.armed());
+}

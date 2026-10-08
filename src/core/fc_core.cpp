@@ -91,6 +91,7 @@ void FcCore::reboot(TimeNs now) noexcept {
     clock_.boot(now);
     encoder_.reset_sequence();
     gate_.reset();
+    dedup_ = CommandDedup{};  // the retransmission cache does not survive a reboot
     dyn_.halt();
     rebooted_once_ = true;
     send_text(kSeverityInfo, "FC stub boot");
