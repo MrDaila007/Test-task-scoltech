@@ -48,3 +48,16 @@ target_compile_definitions(fcstub_integration_tests PRIVATE
     FCSTUB_BIN="$<TARGET_FILE:fc_stub>" FCSTUB_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
 add_dependencies(fcstub_integration_tests fc_stub)
 gtest_discover_tests(fcstub_integration_tests DISCOVERY_TIMEOUT 30 PROPERTIES LABELS integration)
+
+# Real-time timing (rates and the 1 ms jitter budget) on this machine. Not under
+# sanitizers: their overhead is not the stub's jitter. Skip with `ctest -LE timing`
+# on loaded or emulated hosts.
+if(NOT CMAKE_CXX_FLAGS MATCHES "-fsanitize")
+    add_executable(fcstub_timing_tests integration/timing_test.cpp)
+    target_link_libraries(fcstub_timing_tests PRIVATE fcstub_warnings GTest::gtest_main)
+    target_compile_definitions(fcstub_timing_tests PRIVATE
+        FCSTUB_BIN="$<TARGET_FILE:fc_stub>" FCSTUB_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+    add_dependencies(fcstub_timing_tests fc_stub)
+    gtest_discover_tests(fcstub_timing_tests DISCOVERY_TIMEOUT 30
+        PROPERTIES LABELS integration_timing)  # matched by -LE integration and -LE timing
+endif()

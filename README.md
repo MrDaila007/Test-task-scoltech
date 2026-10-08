@@ -109,6 +109,7 @@
 | Команда | Что проверяет |
 |---|---|
 | `./scripts/build_and_test.sh` | 161 тест: модули, ядро, режим модельного времени, сценарии отказов, CLI и обмен по UDP (метка `integration`, реальный процесс) |
+| `ctest --preset release -L timing` | реальное время 5 с: все 6 потоков на своих частотах, джиттер ≤ 1 мс, пропусков нет (метка `integration_timing`; на нагруженной или эмулируемой машине исключить `-LE timing`) |
 | `./scripts/build_and_test.sh asan` | то же под AddressSanitizer + UndefinedBehaviorSanitizer |
 | `./scripts/quality.sh` | cppcheck (0 замечаний) и clang-format |
 | `./scripts/coverage.sh` | покрытие `src/` (нужен `gcovr`, порог 80 % строк): сейчас **94,6 % строк**, 66,6 % ветвлений |
