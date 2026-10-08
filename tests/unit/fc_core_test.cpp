@@ -319,3 +319,28 @@ TEST(FcCore, SysStatusCarriesBatteryAndHealthySensors) {
         MAV_SYS_STATUS_SENSOR_3D_GYRO | MAV_SYS_STATUS_SENSOR_3D_ACCEL | MAV_SYS_STATUS_SENSOR_GPS;
     EXPECT_EQ(s.onboard_control_sensors_health & needed, needed);
 }
+
+// Armed on the ground with a noisy estimate: the vehicle must stay on the
+// ground, report ON_GROUND and accept a plain disarm.
+TEST(FcCore, ArmedOnTheGroundWithEstimatorNoiseStaysLanded) {
+    Config cfg = base_config();
+    cfg.estimator = {0.5, 0.05, 0.01, 1.0};
+    Harness h(cfg);
+    h.run_until(3 * kS);
+    h.send(h.client.arm());
+    double max_alt = 0.0;
+    double max_slide = 0.0;
+    for (TimeNs t = 3 * kS; t < 63 * kS; t += 100 * kMs) {
+        h.run_until(t);
+        max_alt = std::max(max_alt, -h.core.truth().pos[2]);
+        max_slide = std::max(max_slide, std::hypot(h.core.truth().pos[0], h.core.truth().pos[1]));
+        const auto es = h.station.of(MAVLINK_MSG_ID_EXTENDED_SYS_STATE);
+        ASSERT_EQ(mavlink_msg_extended_sys_state_get_landed_state(&es.back().msg),
+                  MAV_LANDED_STATE_ON_GROUND)
+            << "at " << ns_to_seconds(t) << " s, altitude " << -h.core.truth().pos[2];
+    }
+    EXPECT_LT(max_alt, 0.05);
+    EXPECT_LT(max_slide, 0.01);
+    h.send(h.client.arm(false));
+    EXPECT_EQ(acks(h).back().result, MAV_RESULT_ACCEPTED);
+}

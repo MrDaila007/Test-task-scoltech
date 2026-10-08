@@ -9,7 +9,8 @@ namespace {
 
 constexpr double kGravity = 9.80665;
 constexpr double kPi = 3.14159265358979323846;
-constexpr double kMaxYawRate = 1.5;  // rad/s
+constexpr double kMaxYawRate = 1.5;    // rad/s
+constexpr double kLiftOffSpeed = 0.1;  // m/s up: below this a landed vehicle stays put
 
 Vec3 saturate_norm(const Vec3& v, double limit) noexcept {
     const double n = std::hypot(v[0], v[1], v[2]);
@@ -91,6 +92,14 @@ void Dynamics::step(double dt, const MotionTarget& target, const VehicleState& e
         return;
     }
     const Vec3 v_sp = velocity_command(target, est);
+    if (state_.pos[2] >= 0.0 && v_sp[2] > -kLiftOffSpeed) {
+        // Ground contact: without a climb command the vehicle neither slides nor
+        // hops, whatever the estimate noise makes the controllers ask for.
+        state_.vel = {};
+        state_.accel = {};
+        update_attitude(dt, 0.0);
+        return;
+    }
     const double yaw_rate = yaw_rate_command(target, est);
     const double k = dt / params_.tau_s;
     for (std::size_t i = 0; i < 3; ++i) {

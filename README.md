@@ -108,17 +108,17 @@
 
 | Команда | Что проверяет |
 |---|---|
-| `./scripts/build_and_test.sh` | 161 тест: модули, ядро, режим модельного времени, сценарии отказов, CLI и обмен по UDP (метка `integration`, реальный процесс) |
+| `./scripts/build_and_test.sh` | 184 теста: модули, ядро, режим модельного времени, сценарии отказов и эталонный детектор, CLI и обмен по UDP (метка `integration`, реальный процесс), джиттер в реальном времени (метка `integration_timing`) |
 | `ctest --preset release -L timing` | реальное время 5 с: все 6 потоков на своих частотах, джиттер ≤ 1 мс, пропусков нет (метка `integration_timing`; на нагруженной или эмулируемой машине исключить `-LE timing`) |
 | `./scripts/build_and_test.sh asan` | то же под AddressSanitizer + UndefinedBehaviorSanitizer |
 | `./scripts/quality.sh` | cppcheck (0 замечаний) и clang-format |
-| `./scripts/coverage.sh` | покрытие `src/` (нужен `gcovr`, порог 80 % строк): сейчас **94,6 % строк**, 66,6 % ветвлений |
+| `./scripts/coverage.sh` | покрытие `src/` (нужен `gcovr`, порог 80 % строк): сейчас **92,6 % строк**, 60,5 % ветвлений |
 | `./scripts/verify_clean_machine.sh` | чистые контейнеры из `git archive HEAD`: Ubuntu 22.04 и 24.04 с g++, 22.04 с clang++, покрытие, arm64 (qemu) — все PASS |
 | `.venv/bin/python scripts/mavsdk_check.py` | настоящий MAVSDK 2.8 (`pip install "mavsdk>=2.8,<3"` в venv): подключение, arm, OFFBOARD по заданиям скорости, `in_air`, HOLD, отказ disarm в воздухе — все PASS |
 | `./scripts/measure_jitter.sh idle 60` | замер джиттера на этой машине |
 
 Ключевые проверки:
-- частоты 1/50/10/2 Гц ровно на сетке;
+- частоты 1/50/10/2/1/1 Гц ровно на сетке, в модельном и в реальном времени;
 - граница таймаута 499/501 мс;
 - **ноль выделений памяти** в ядре после старта (отдельный исполняемый файл подменяет `operator new`);
 - одинаковый SHA-256 двух прогонов и эталонный хэш сценария со всеми отказами — совпадает в `-O0`, `-O2`, под ASan, в clang, на Ubuntu 24.04 (GCC 13) и на aarch64;

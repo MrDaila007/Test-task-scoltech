@@ -10,7 +10,8 @@
 // estimate itself keeps following the setpoint.
 //
 // Roll and pitch are the tilt needed for the current horizontal acceleration
-// (body frame from yaw); the ground (down = 0) is a hard floor. The model is
+// (body frame from yaw); the ground (down = 0) is a hard floor, and a landed
+// vehicle stays put until it is commanded to climb faster than 0.1 m/s. The model is
 // deliberately simple: it only has to make setpoints visible in telemetry.
 
 #include "fcstub/config.hpp"
