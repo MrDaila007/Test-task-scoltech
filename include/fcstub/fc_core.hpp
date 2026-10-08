@@ -44,9 +44,10 @@ enum class Stream : std::uint8_t {
     GlobalPosition = 2,
     Battery = 3,
     SysStatus = 4,
-    ExtendedSysState = 5
+    ExtendedSysState = 5,
+    Timesync = 6  // the autopilot's own TIMESYNC request
 };
-inline constexpr std::size_t kStreamCount = 6;
+inline constexpr std::size_t kStreamCount = 7;
 
 const char* stream_name(Stream stream) noexcept;
 
@@ -69,6 +70,10 @@ struct CoreStats {
     std::uint64_t statustexts = 0;
     std::uint64_t missed_deadlines = 0;
     std::array<std::uint64_t, kStreamCount> missed_per_stream{};  // indexed by Stream
+    // Autopilot-initiated TIMESYNC: offset = onboard clock - autopilot clock.
+    std::uint64_t timesync_samples = 0;
+    std::int64_t timesync_offset_ns = 0;  // first sample, then a 1/8 moving average
+    std::int64_t timesync_rtt_ns = 0;     // last round trip
     DecoderStats decoder;
     GateStats gate;
     LinkStats uplink;
@@ -164,7 +169,9 @@ private:
     bool reject_text_sent_ = false;  // rate limit for "Setpoint rejected" texts
     bool started_ = false;
     bool rebooted_once_ = false;
-    std::uint32_t overrides_applied_ = 0;  // bit = fault window index (kMaxFaults <= 32)
+    std::uint32_t overrides_applied_ = 0;
+    std::int64_t timesync_ts1_ = 0;  // ts1 of the open request
+    bool timesync_open_ = false;     // bit = fault window index (kMaxFaults <= 32)
     CoreStats stats_{};
 };
 

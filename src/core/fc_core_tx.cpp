@@ -94,6 +94,13 @@ void FcCore::emit_telemetry(Stream stream, TimeNs deadline) noexcept {
         case Stream::ExtendedSysState:
             send(encoder_.extended_sys_state(in_air() ? kLandedInAir : kLandedOnGround), tag);
             break;
+        case Stream::Timesync:
+            // A new request supersedes an unanswered one; a late reply to the old
+            // one is ignored.
+            timesync_ts1_ = clock_.fc_ns(now_);
+            timesync_open_ = true;
+            send(encoder_.timesync({0, timesync_ts1_, 0, 0}), tag);
+            break;
     }
 }
 

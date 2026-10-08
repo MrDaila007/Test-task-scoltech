@@ -192,8 +192,25 @@ void FcCore::handle_mission(const MissionCountMsg& msg) noexcept {
 }
 
 void FcCore::handle_timesync(const TimesyncMsg& msg) noexcept {
-    if (msg.tc1 != 0 || !addressed_to_us(msg.target_system, msg.target_component)) {
-        return;  // a response from someone else, or not for us
+    if (!addressed_to_us(msg.target_system, msg.target_component)) {
+        return;
+    }
+    if (msg.tc1 != 0) {  // a reply: ours only if it echoes the open request
+        if (!timesync_open_ || msg.ts1 != timesync_ts1_) {
+            return;
+        }
+        const std::int64_t now = clock_.fc_ns(rx_now_);
+        const std::int64_t rtt = now - msg.ts1;
+        // The onboard clock read tc1 halfway through the round trip.
+        const std::int64_t offset = msg.tc1 - (msg.ts1 + rtt / 2);
+        stats_.timesync_offset_ns =
+            stats_.timesync_samples == 0
+                ? offset
+                : stats_.timesync_offset_ns + (offset - stats_.timesync_offset_ns) / 8;
+        stats_.timesync_rtt_ns = rtt;
+        ++stats_.timesync_samples;
+        timesync_open_ = false;
+        return;
     }
     send(encoder_.timesync(
         {clock_.fc_ns(rx_now_), msg.ts1, msg.source_system, msg.source_component}));

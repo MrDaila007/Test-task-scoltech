@@ -28,6 +28,7 @@ TEST(Config, MinimalDocumentGetsContractDefaults) {
     const fcstub::Config cfg = load_config_from_string(kMinimal);
     EXPECT_EQ(cfg.run.mode, fcstub::RunMode::Realtime);
     EXPECT_EQ(cfg.run.seed, 1U);
+    EXPECT_EQ(cfg.link.bind_addr, "127.0.0.1");  // no MAVLink signing: local only by default
     EXPECT_EQ(cfg.link.bind_port, 14580);
     EXPECT_EQ(cfg.link.remote_addr, "127.0.0.1");
     EXPECT_EQ(cfg.link.remote_port, 14540);

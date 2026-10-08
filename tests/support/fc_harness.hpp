@@ -123,6 +123,10 @@ public:
                                               MAV_MISSION_TYPE_MISSION, 0);
         return finish();
     }
+    Bytes timesync_reply(std::int64_t tc1, std::int64_t ts1) {
+        mavlink_msg_timesync_pack_status(255, 190, &status_, &msg_, tc1, ts1, 1, 1);
+        return finish();
+    }
     Bytes timesync(std::int64_t ts1) {
         mavlink_msg_timesync_pack_status(255, 190, &status_, &msg_, 0, ts1, 1, 1);
         return finish();

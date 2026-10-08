@@ -9,7 +9,12 @@
 
 #include <chrono>
 #include <cstring>
+#include <filesystem>
+#include <fstream>
 #include <functional>
+#include <iterator>
+#include <regex>
+#include <string>
 #include <thread>
 
 namespace {
@@ -186,4 +191,44 @@ TEST(UdpE2E, ArmOffboardAndHoldOnSetpointLoss) {
                mavlink_msg_heartbeat_get_custom_mode(&m) == ((4U << 16U) | (3U << 24U));
     }));
     EXPECT_EQ(fc.terminate(), 0);
+}
+
+// The autopilot's own TIMESYNC: a client whose clock runs 5 s ahead answers every
+// request; the stub's report shows the offset and a loopback round trip.
+TEST(UdpE2E, AutopilotTimesyncMeasuresOffsetAndRoundTrip) {
+    const std::uint16_t fc_port = free_udp_port();
+    UdpClient client(fc_port);
+    const auto report = std::filesystem::temp_directory_path() / "fcstub_it_timesync.json";
+    std::filesystem::remove(report);
+    const auto cfg = temp_file(
+        "timesync.yaml",
+        "schema_version: 1\nrun: {duration_s: 10}\nlink: {bind_addr: 127.0.0.1, "
+        "bind_port: " +
+            std::to_string(fc_port) + ", remote_port: " + std::to_string(client.port()) +
+            "}\nrealtime: {sched_fifo: false, report_path: \"" + report.string() + "\"}\n");
+    Child fc({"--config", cfg.string()});
+    constexpr std::int64_t kAheadNs = 5'000'000'000;
+    (void)client.wait_for(std::chrono::milliseconds(3500), [&client](const auto& m) {
+        if (m.msgid == MAVLINK_MSG_ID_TIMESYNC && mavlink_msg_timesync_get_tc1(&m) == 0) {
+            const std::int64_t ts1 = mavlink_msg_timesync_get_ts1(&m);
+            mavlink_message_t reply{};
+            mavlink_msg_timesync_pack(255, 190, &reply, ts1 + kAheadNs, ts1, m.sysid, m.compid);
+            client.send(reply);
+        }
+        return false;  // keep answering until the window ends
+    });
+    EXPECT_EQ(fc.terminate(), 0);
+    std::ifstream in(report);
+    const std::string json((std::istreambuf_iterator<char>(in)), {});
+    const std::regex re(
+        "\"timesync_estimate\": \\{\"samples\": ([0-9]+), \"offset_us\": ([-0-9.]+), \"rtt_us\": "
+        "([0-9.]+)\\}");
+    std::smatch m;
+    ASSERT_TRUE(std::regex_search(json, m, re)) << json;
+    EXPECT_GE(std::stol(m[1]), 3);
+    // The reply stamps ts1 + 5 s, i.e. the request time, not the midpoint: the
+    // measured offset is 5 s minus half the round trip.
+    // Tolerances leave room for a loaded host, where loopback RTT reaches ms.
+    EXPECT_NEAR(std::stod(m[2]), 5e6, 5000.0);
+    EXPECT_LT(std::stod(m[3]), 20000.0);
 }

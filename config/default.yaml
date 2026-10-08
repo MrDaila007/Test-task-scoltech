@@ -11,7 +11,7 @@ run:
   duration_s: 0           # 0 = run until SIGINT/SIGTERM (realtime only)
 
 link:                     # MAVLink 2 over UDP, defaults mirror PX4 SITL's offboard link
-  bind_addr: 0.0.0.0
+  bind_addr: 127.0.0.1    # local only (no MAVLink signing); set the bench interface to open it
   bind_port: 14580
   remote_addr: 127.0.0.1
   remote_port: 14540      # where MAVSDK / MAVROS listen by default
@@ -29,6 +29,7 @@ telemetry_hz:
   battery: 2
   sys_status: 1             # sensor health and battery summary (MAVSDK health)
   extended_sys_state: 1     # landed state (MAVSDK in_air)
+  timesync: 1               # autopilot's own TIMESYNC requests (offset and RTT estimate)
 
 modes:
   ready_after_ms: 2000            # boot -> "ready" (STANDBY)

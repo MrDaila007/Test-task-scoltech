@@ -12,9 +12,11 @@ when every step passed.
 """
 
 import asyncio
+import json
 import os
 import subprocess
 import sys
+import tempfile
 from typing import AsyncIterator, Callable, TypeVar
 
 from mavsdk import System
@@ -89,14 +91,22 @@ async def check() -> None:
 
 
 def main() -> None:
-    stub = subprocess.Popen([STUB, "--config", os.path.join(ROOT, "config/default.yaml")],
-                            stderr=subprocess.DEVNULL)
-    try:
-        asyncio.run(asyncio.wait_for(check(), 60))
-        print("all MAVSDK checks passed")
-    finally:
-        stub.terminate()
-        stub.wait(5)
+    with tempfile.TemporaryDirectory() as tmp:
+        report = os.path.join(tmp, "report.json")
+        stub = subprocess.Popen([STUB, "--config", os.path.join(ROOT, "config/default.yaml"),
+                                 "--report", report], stderr=subprocess.DEVNULL)
+        try:
+            asyncio.run(asyncio.wait_for(check(), 60))
+        finally:
+            stub.terminate()
+            stub.wait(5)
+        # Informational: MAVSDK 2.8 neither sends TIMESYNC nor answers the
+        # autopilot's requests (MAVROS does). The exchange itself is covered by
+        # tests/integration/udp_e2e_test.cpp.
+        with open(report, encoding="utf-8") as f:
+            timesync = json.load(f)["timesync_estimate"]
+        print(f"INFO  autopilot TIMESYNC requests answered by MAVSDK: {timesync['samples']}")
+    print("all MAVSDK checks passed")
 
 
 if __name__ == "__main__":

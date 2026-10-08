@@ -57,7 +57,8 @@ TEST(Timing, EveryStreamKeepsItsRateWithJitterUnderOneMillisecond) {
         const char* name;
         double hz;
     } streams[] = {{"heartbeat", 1}, {"attitude", 50},  {"global_position", 10},
-                   {"battery", 2},   {"sys_status", 1}, {"extended_sys_state", 1}};
+                   {"battery", 2},   {"sys_status", 1}, {"extended_sys_state", 1},
+                   {"timesync", 1}};
     for (const auto& s : streams) {
         const StreamReport r = stream(json, s.name);
         // Grid points 0, T, 2T ... up to and including the end of the run.

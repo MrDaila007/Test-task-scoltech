@@ -46,6 +46,7 @@ FcCore::FcCore(const Config& cfg)
     scheduler_.add(period_from_hz(cfg_.telemetry_hz.battery), 0);
     scheduler_.add(period_from_hz(cfg_.telemetry_hz.sys_status), 0);
     scheduler_.add(period_from_hz(cfg_.telemetry_hz.extended_sys_state), 0);
+    scheduler_.add(period_from_hz(cfg_.telemetry_hz.timesync), 0);
     modes_.boot(0);
     clock_.boot(0);
 }
@@ -92,6 +93,7 @@ void FcCore::reboot(TimeNs now) noexcept {
     encoder_.reset_sequence();
     gate_.reset();
     dedup_ = CommandDedup{};  // the retransmission cache does not survive a reboot
+    timesync_open_ = false;   // nor does an open TIMESYNC request
     rebooted_once_ = true;
     send_text(kSeverityInfo, "FC stub boot");
 }
@@ -266,6 +268,8 @@ const char* stream_name(Stream stream) noexcept {
             return "sys_status";
         case Stream::ExtendedSysState:
             return "extended_sys_state";
+        case Stream::Timesync:
+            return "timesync";
     }
     return "?";
 }

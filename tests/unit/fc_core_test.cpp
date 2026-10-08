@@ -138,6 +138,7 @@ TEST(FcCore, SetpointLossSwitchesToHoldJustAfter500ms) {
 TEST(FcCore, TimesyncIsAnsweredWithAutopilotTime) {
     Harness h(base_config());
     h.run_until(4 * kS);
+    h.station.log.clear();  // drop the autopilot's own TIMESYNC requests
     h.send(h.client.timesync(123456789));
     const auto ts = h.station.of(MAVLINK_MSG_ID_TIMESYNC);
     ASSERT_EQ(ts.size(), 1U);
@@ -511,4 +512,47 @@ TEST(FcCore, MissionListIsEmptyAndUploadsAreUnsupported) {
     const auto acks = h.station.of(MAVLINK_MSG_ID_MISSION_ACK);
     ASSERT_EQ(acks.size(), 1U);
     EXPECT_EQ(mavlink_msg_mission_ack_get_type(&acks[0].msg), MAV_MISSION_UNSUPPORTED);
+}
+
+// --- autopilot-initiated TIMESYNC ---------------------------------------------------
+
+namespace {
+
+std::vector<mavlink_timesync_t> timesync_requests(const Harness& h) {
+    std::vector<mavlink_timesync_t> out;
+    for (const auto& r : h.station.of(MAVLINK_MSG_ID_TIMESYNC)) {
+        mavlink_timesync_t t{};
+        mavlink_msg_timesync_decode(&r.msg, &t);
+        if (t.tc1 == 0) {
+            out.push_back(t);
+        }
+    }
+    return out;
+}
+
+}  // namespace
+
+TEST(FcCore, AutopilotSendsTimesyncRequestsAtOneHertz) {
+    Harness h(base_config());
+    h.run_until(10 * kS - 1);
+    const auto req = timesync_requests(h);
+    ASSERT_EQ(req.size(), 10U);
+    EXPECT_EQ(req[3].ts1, 3 * kS);  // autopilot time of the request
+}
+
+// The onboard computer's clock is 5 s ahead and the reply takes 2 ms round trip:
+// the autopilot measures offset 5 s and RTT 2 ms.
+TEST(FcCore, TimesyncReplyGivesOffsetAndRoundTrip) {
+    Harness h(base_config());
+    h.run_until(3 * kS);
+    const std::int64_t ts1 = timesync_requests(h).back().ts1;
+    h.run_until(3 * kS + 2 * kMs);
+    h.send(h.client.timesync_reply(ts1 + 1 * kMs + 5 * kS, ts1));
+    const CoreStats& st = h.core.stats();
+    EXPECT_EQ(st.timesync_samples, 1U);
+    EXPECT_EQ(st.timesync_rtt_ns, 2 * kMs);
+    EXPECT_EQ(st.timesync_offset_ns, 5 * kS);
+    h.send(h.client.timesync_reply(ts1 + 99 * kS, ts1));  // duplicate: ignored
+    h.send(h.client.timesync_reply(42, 7));               // not our request: ignored
+    EXPECT_EQ(h.core.stats().timesync_samples, 1U);
 }

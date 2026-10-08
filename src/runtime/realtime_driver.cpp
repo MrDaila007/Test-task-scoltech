@@ -144,7 +144,8 @@ std::string build_report(const HostInfo& host, double duration_s, const SocketSi
     const double rates[kStreamCount] = {
         cfg.telemetry_hz.heartbeat,       cfg.telemetry_hz.attitude,
         cfg.telemetry_hz.global_position, cfg.telemetry_hz.battery,
-        cfg.telemetry_hz.sys_status,      cfg.telemetry_hz.extended_sys_state};
+        cfg.telemetry_hz.sys_status,      cfg.telemetry_hz.extended_sys_state,
+        cfg.telemetry_hz.timesync};
     std::string out;
     char buf[512];
     std::snprintf(
@@ -170,9 +171,13 @@ std::string build_report(const HostInfo& host, double duration_s, const SocketSi
     }
     std::snprintf(
         buf, sizeof(buf),
-        "\n  },\n  \"rx\": {\"datagrams\": %llu, \"frames\": %llu, \"crc_errors\": %llu, "
+        "\n  },\n  \"timesync_estimate\": {\"samples\": %llu, \"offset_us\": %.1f, \"rtt_us\": %.1f},"
+        "\n  \"rx\": {\"datagrams\": %llu, \"frames\": %llu, \"crc_errors\": %llu, "
         "\"setpoints_rejected\": %llu},\n  \"tx\": {\"frames\": %llu, \"send_errors\": %llu},"
         "\n  \"jitter_ok\": %s\n}\n",
+        static_cast<unsigned long long>(st.timesync_samples),
+        static_cast<double>(st.timesync_offset_ns) / 1000.0,
+        static_cast<double>(st.timesync_rtt_ns) / 1000.0,
         static_cast<unsigned long long>(st.rx_datagrams),
         static_cast<unsigned long long>(st.decoder.frames_ok),
         static_cast<unsigned long long>(st.decoder.crc_errors),

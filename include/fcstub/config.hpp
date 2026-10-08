@@ -23,7 +23,7 @@ struct RunConfig {
 };
 
 struct LinkConfig {
-    std::string bind_addr = "0.0.0.0";
+    std::string bind_addr = "127.0.0.1";  // local only: MAVLink is not signed
     std::uint16_t bind_port = 14580;
     std::string remote_addr = "127.0.0.1";
     std::uint16_t remote_port = 14540;
@@ -43,6 +43,7 @@ struct TelemetryRates {
     double battery = 2.0;
     double sys_status = 1.0;
     double extended_sys_state = 1.0;
+    double timesync = 1.0;  // autopilot-initiated TIMESYNC requests, as PX4
 };
 
 struct ModesConfig {
