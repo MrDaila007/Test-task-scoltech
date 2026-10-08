@@ -26,7 +26,7 @@
 | §3.3 Конфигурация отдельно от кода, ≤ 200 параметров | [`config/default.yaml`](config/default.yaml), загрузчик — [`src/config/`](src/config/) |
 | §3.3 Джиттер ≤ 1 мс | [`docs/measurements/jitter-x86_64.md`](docs/measurements/jitter-x86_64.md), тест — [`tests/integration/timing_test.cpp`](tests/integration/timing_test.cpp) |
 | §3.3 Тесты: частоты, удержание, каждый отказ, воспроизводимость | [`tests/`](tests/) — см. «Карта репозитория» ниже |
-| §3.3 Сборка на чистой машине | [Быстрый старт](#быстрый-старт), [`scripts/verify_clean_machine.sh`](scripts/verify_clean_machine.sh) |
+| §3.3 Сборка на чистой машине | [Быстрый старт](#быстрый-старт), [`scripts/verify_clean_machine.sh`](scripts/verify_clean_machine.sh), CI — [`.github/workflows/ci.yml`](.github/workflows/ci.yml) |
 
 ## Быстрый старт
 
@@ -286,6 +286,9 @@ git tag v0.1.0 && git push origin v0.1.0
 | [`scripts/verify_clean_machine.sh`](scripts/verify_clean_machine.sh), [`docker/Dockerfile`](docker/Dockerfile) | Сборка и тесты в чистых контейнерах, включая arm64 |
 | [`scripts/measure_jitter.sh`](scripts/measure_jitter.sh) | Замер джиттера в простое и под нагрузкой |
 | [`scripts/mavsdk_check.py`](scripts/mavsdk_check.py) | Проверка настоящим MAVSDK |
+| [`.github/workflows/ci.yml`](.github/workflows/ci.yml) | CI: сборки g++/clang, ASan, качество, покрытие, arm64, неблокирующий джиттер (см. «CI/CD») |
+| [`.github/workflows/release.yml`](.github/workflows/release.yml) | CD: по тегу `v*` — архивы x86_64 и aarch64 с SHA-256 в GitHub Release |
+| [`.github/actions/deps-cache/action.yml`](.github/actions/deps-cache/action.yml), [`.github/dependabot.yml`](.github/dependabot.yml) | Кеш загрузок зависимостей; обновление версий actions |
 
 ## Решения, принятые сознательно
 

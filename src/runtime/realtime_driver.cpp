@@ -171,7 +171,8 @@ std::string build_report(const HostInfo& host, double duration_s, const SocketSi
     }
     std::snprintf(
         buf, sizeof(buf),
-        "\n  },\n  \"timesync_estimate\": {\"samples\": %llu, \"offset_us\": %.1f, \"rtt_us\": %.1f},"
+        "\n  },\n  \"timesync_estimate\": {\"samples\": %llu, \"offset_us\": %.1f, \"rtt_us\": "
+        "%.1f},"
         "\n  \"rx\": {\"datagrams\": %llu, \"frames\": %llu, \"crc_errors\": %llu, "
         "\"setpoints_rejected\": %llu},\n  \"tx\": {\"frames\": %llu, \"send_errors\": %llu},"
         "\n  \"jitter_ok\": %s\n}\n",
