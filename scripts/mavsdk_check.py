@@ -60,6 +60,8 @@ async def check() -> None:
     step("int param", cells == 6, f"BAT1_N_CELLS={cells}")
     plan = await drone.mission_raw.download_mission()
     step("mission download", len(plan) == 0, "empty plan")
+    await drone.mission_raw.clear_mission()
+    step("mission clear", True, "acknowledged")
 
     await asyncio.sleep(2.5)  # the stub becomes ready to arm 2 s after boot
     await drone.action.arm()

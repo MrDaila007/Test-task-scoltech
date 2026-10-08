@@ -175,6 +175,16 @@ RxMessage decode_mission(const mavlink_message_t& msg) noexcept {
         out.mission_type = m.mission_type;
         return out;
     }
+    if (msg.msgid == MAVLINK_MSG_ID_MISSION_CLEAR_ALL) {
+        mavlink_mission_clear_all_t m{};
+        mavlink_msg_mission_clear_all_decode(&msg, &m);
+        MissionClearAllMsg out;
+        fill_header(out, msg);
+        out.target_system = m.target_system;
+        out.target_component = m.target_component;
+        out.mission_type = m.mission_type;
+        return out;
+    }
     mavlink_mission_count_t m{};
     mavlink_msg_mission_count_decode(&msg, &m);
     MissionCountMsg out;
@@ -193,6 +203,7 @@ RxMessage decode(const mavlink_message_t& msg) noexcept {
             return decode_param(msg);
         case MAVLINK_MSG_ID_MISSION_REQUEST_LIST:
         case MAVLINK_MSG_ID_MISSION_COUNT:
+        case MAVLINK_MSG_ID_MISSION_CLEAR_ALL:
             return decode_mission(msg);
         case MAVLINK_MSG_ID_SET_POSITION_TARGET_LOCAL_NED:
             return decode_setpoint(msg);

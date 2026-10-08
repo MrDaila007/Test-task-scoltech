@@ -115,6 +115,7 @@ struct MissionReplyData {
     std::uint8_t target_system, target_component;
 };
 
+inline constexpr std::uint8_t kMissionAccepted = 0;     // MAV_MISSION_ACCEPTED
 inline constexpr std::uint8_t kMissionUnsupported = 3;  // MAV_MISSION_UNSUPPORTED
 
 struct TimesyncData {
@@ -228,13 +229,18 @@ struct MissionCountMsg : RxHeader {  // an upload attempt
     std::uint8_t mission_type = 0;
 };
 
+struct MissionClearAllMsg : RxHeader {
+    std::uint8_t target_system = 0, target_component = 0;
+    std::uint8_t mission_type = 0;
+};
+
 struct OtherMsg : RxHeader {
     std::uint32_t msgid = 0;
 };
 
 using RxMessage =
     std::variant<SetpointMsg, CommandLongMsg, TimesyncMsg, ParamRequestListMsg, ParamRequestReadMsg,
-                 ParamSetMsg, MissionRequestListMsg, MissionCountMsg, OtherMsg>;
+                 ParamSetMsg, MissionRequestListMsg, MissionCountMsg, MissionClearAllMsg, OtherMsg>;
 
 class RxHandler {
 public:

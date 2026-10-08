@@ -556,3 +556,16 @@ TEST(FcCore, TimesyncReplyGivesOffsetAndRoundTrip) {
     h.send(h.client.timesync_reply(42, 7));               // not our request: ignored
     EXPECT_EQ(h.core.stats().timesync_samples, 1U);
 }
+
+// Clearing the (always empty) plan succeeds at once instead of timing out.
+TEST(FcCore, MissionClearAllIsAcknowledged) {
+    Harness h(base_config());
+    h.run_until(1 * kS);
+    h.send(h.client.mission_clear_all());
+    const auto acks = h.station.of(MAVLINK_MSG_ID_MISSION_ACK);
+    ASSERT_EQ(acks.size(), 1U);
+    mavlink_mission_ack_t a{};
+    mavlink_msg_mission_ack_decode(&acks[0].msg, &a);
+    EXPECT_EQ(a.type, MAV_MISSION_ACCEPTED);
+    EXPECT_EQ(a.target_system, 255);
+}

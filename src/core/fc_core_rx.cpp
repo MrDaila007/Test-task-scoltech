@@ -78,7 +78,8 @@ void FcCore::on_message(const RxMessage& msg) noexcept {
             } else if constexpr (std::is_same_v<T, ParamSetMsg>) {
                 handle_param_set(m);
             } else if constexpr (std::is_same_v<T, MissionRequestListMsg> ||
-                                 std::is_same_v<T, MissionCountMsg>) {
+                                 std::is_same_v<T, MissionCountMsg> ||
+                                 std::is_same_v<T, MissionClearAllMsg>) {
                 handle_mission(m);
             }
         },
@@ -188,6 +189,13 @@ void FcCore::handle_mission(const MissionCountMsg& msg) noexcept {
     if (addressed_to_us(msg.target_system, msg.target_component)) {
         send(encoder_.mission_ack({msg.mission_type, msg.source_system, msg.source_component},
                                   kMissionUnsupported));
+    }
+}
+
+void FcCore::handle_mission(const MissionClearAllMsg& msg) noexcept {
+    if (addressed_to_us(msg.target_system, msg.target_component)) {
+        send(encoder_.mission_ack({msg.mission_type, msg.source_system, msg.source_component},
+                                  kMissionAccepted));  // the plan is already empty
     }
 }
 

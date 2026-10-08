@@ -124,6 +124,7 @@ TEST(NoAlloc, CoreRunsSixtySecondsWithAllFaultsWithoutAllocating) {
     h.send(h.client.param_set("COM_OF_LOSS_T", 0.8F));
     h.send(h.client.mission_request_list());
     h.send(h.client.mission_count(2));
+    h.send(h.client.mission_clear_all());
     h.run_until(61 * kNsPerS);
     g_counting = false;
 

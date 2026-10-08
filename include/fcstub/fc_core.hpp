@@ -134,6 +134,7 @@ private:
     void handle_param_set(const ParamSetMsg& msg) noexcept;
     void handle_mission(const MissionRequestListMsg& msg) noexcept;
     void handle_mission(const MissionCountMsg& msg) noexcept;
+    void handle_mission(const MissionClearAllMsg& msg) noexcept;
     ModeChange execute_command(const CommandLongMsg& msg) noexcept;
     bool addressed_to_us(std::uint8_t target_system, std::uint8_t target_component) const noexcept;
 
