@@ -17,6 +17,8 @@ ConfigError::ConfigError(std::string key_path, const std::string& reason)
 
 namespace {
 
+constexpr double kMaxDurationS = 86400.0;
+
 using detail::EnumNames;
 using detail::Section;
 
@@ -24,7 +26,7 @@ void parse_run(Section s, RunConfig& run) {
     s.enumeration("mode", run.mode,
                   EnumNames<RunMode>{{"realtime", RunMode::Realtime}, {"sim", RunMode::Sim}});
     s.number("seed", run.seed, std::uint64_t{0}, std::numeric_limits<std::uint64_t>::max());
-    s.number("duration_s", run.duration_s, 0.0, 86400.0);
+    s.number("duration_s", run.duration_s, 0.0, kMaxDurationS);
     s.finish();
 }
 
@@ -189,6 +191,10 @@ double window_end(const FaultSpec& f) {
 }  // namespace
 
 void validate_config(const Config& cfg) {
+    // Also guards command-line overrides, which bypass the per-key YAML ranges.
+    if (!(cfg.run.duration_s >= 0.0 && cfg.run.duration_s <= kMaxDurationS)) {
+        throw ConfigError("run.duration_s", "out of range [0, 86400]");
+    }
     if (cfg.run.mode == RunMode::Sim && cfg.run.duration_s <= 0.0) {
         throw ConfigError("run.duration_s", "sim mode needs a positive duration");
     }

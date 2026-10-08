@@ -7,6 +7,8 @@
 #include "fcstub/realtime_driver.hpp"
 #include "fcstub/sim_driver.hpp"
 
+#include <cmath>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <exception>
@@ -101,19 +103,42 @@ bool parse_args(int argc, const char* const* argv, Options& o) {
     return true;
 }
 
-void apply_overrides(const Options& o, fcstub::Config& cfg) {
+// Whole-string numbers only: "5abc", "-1" for the seed, "nan" are errors, not 5,
+// 2^64-1 or NaN. Ranges are checked afterwards by validate_config().
+std::uint64_t parse_seed(const std::string& text) {
+    if (text.empty() || text.find_first_not_of("0123456789") != std::string::npos) {
+        throw fcstub::ConfigError("<command line>", "--seed expects a non-negative integer");
+    }
     try {
-        if (o.sim) {
-            cfg.run.mode = fcstub::RunMode::Sim;
-        }
-        if (o.seed) {
-            cfg.run.seed = std::stoull(*o.seed);
-        }
-        if (o.duration) {
-            cfg.run.duration_s = std::stod(*o.duration);
-        }
+        return std::stoull(text);
     } catch (const std::exception&) {
-        throw fcstub::ConfigError("<command line>", "--seed/--duration expect a number");
+        throw fcstub::ConfigError("<command line>", "--seed out of range");
+    }
+}
+
+double parse_duration(const std::string& text) {
+    std::size_t used = 0;
+    double value = 0.0;
+    try {
+        value = std::stod(text, &used);
+    } catch (const std::exception&) {
+        used = 0;
+    }
+    if (used == 0 || used != text.size() || !std::isfinite(value)) {
+        throw fcstub::ConfigError("<command line>", "--duration expects a number of seconds");
+    }
+    return value;
+}
+
+void apply_overrides(const Options& o, fcstub::Config& cfg) {
+    if (o.sim) {
+        cfg.run.mode = fcstub::RunMode::Sim;
+    }
+    if (o.seed) {
+        cfg.run.seed = parse_seed(*o.seed);
+    }
+    if (o.duration) {
+        cfg.run.duration_s = parse_duration(*o.duration);
     }
     if (o.out) {
         cfg.sim.out_dir = *o.out;

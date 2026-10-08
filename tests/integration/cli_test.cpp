@@ -41,6 +41,17 @@ TEST(Cli, BadConfigurationIs2) {
     EXPECT_EQ(run("--config " + kFixtures + "golden_all_faults.yaml --seed x").exit_code, 2);
 }
 
+// Command-line overrides obey the same ranges as the YAML keys they replace.
+TEST(Cli, OverridesAreRangeChecked) {
+    const std::string cfg = std::string(FCSTUB_SOURCE_DIR) + "/config/default.yaml";
+    for (const char* bad : {"--duration -5", "--duration 5abc", "--duration nan", "--duration 1e9",
+                            "--seed -1", "--seed 12x", "--seed \"\""}) {
+        const RunResult r = run("--config " + cfg + " --validate " + bad);
+        EXPECT_EQ(r.exit_code, 2) << bad;
+    }
+    EXPECT_EQ(run("--config " + cfg + " --validate --duration 2.5 --seed 42").exit_code, 0);
+}
+
 TEST(Cli, ValidateAndParamCount) {
     const std::string cfg = std::string(FCSTUB_SOURCE_DIR) + "/config/default.yaml";
     const RunResult v = run("--config " + cfg + " --validate");
