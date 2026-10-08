@@ -1,3 +1,4 @@
 # Build outputs
 build/
 out/
+.venv/

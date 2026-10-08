@@ -114,6 +114,7 @@
 | `./scripts/quality.sh` | cppcheck (0 замечаний) и clang-format |
 | `./scripts/coverage.sh` | покрытие `src/` (нужен `gcovr`, порог 80 % строк): сейчас **94,6 % строк**, 66,6 % ветвлений |
 | `./scripts/verify_clean_machine.sh` | чистые контейнеры из `git archive HEAD`: Ubuntu 22.04 и 24.04 с g++, 22.04 с clang++, покрытие, arm64 (qemu) — все PASS |
+| `.venv/bin/python scripts/mavsdk_check.py` | настоящий MAVSDK 2.8 (`pip install "mavsdk>=2.8,<3"` в venv): подключение, arm, OFFBOARD по заданиям скорости, `in_air`, HOLD, отказ disarm в воздухе — все PASS |
 | `./scripts/measure_jitter.sh idle 60` | замер джиттера на этой машине |
 
 Ключевые проверки:
@@ -167,5 +168,4 @@ tests/        unit, scenario (обнаружимость отказов), integr
 - **Нет подписи MAVLink.** Управлять заглушкой может любой узел в сети.
 - **Нет протоколов параметров и миссий** (`PARAM_*`, `MISSION_*`). Некоторые клиенты (QGC) будут их запрашивать.
 - **Заглушка не инициирует TIMESYNC**, только отвечает на запросы.
-- **Совместимость с реальным MAVSDK не проверялась** прогоном. Протокол и порты повторяют PX4 SITL.
 - **Тайминги на Jetson не измерены**, `SCHED_FIFO` на этой машине недоступен (нет прав). TSan не запускался: на ядре 6.8 он не стартует без `setarch -R`, а в коде один поток.
