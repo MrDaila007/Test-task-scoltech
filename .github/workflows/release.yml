@@ -50,7 +50,7 @@ jobs:
       # --- aarch64 under qemu on an x64 runner ---
       - name: Set up QEMU
         if: matrix.arch == 'aarch64' && runner.arch != 'ARM64'
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
         with:
           platforms: arm64
       - name: Build and test in an arm64 container (qemu)
