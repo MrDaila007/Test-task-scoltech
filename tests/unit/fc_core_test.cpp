@@ -4,6 +4,10 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstring>
+#include <map>
+#include <set>
+#include <string>
 
 namespace {
 
@@ -410,4 +414,101 @@ TEST(FcCore, EmptyBatteryDropsTheVehicle) {
     fly_offboard(h, 30 * kS);
     EXPECT_TRUE(h.core.armed());  // the autopilot still flies "normally"
     EXPECT_DOUBLE_EQ(h.core.truth().pos[2], 0.0);
+}
+
+// --- parameter and mission protocols ------------------------------------------------
+
+namespace {
+
+std::map<std::string, mavlink_param_value_t> params(const Harness& h) {
+    std::map<std::string, mavlink_param_value_t> out;
+    for (const auto& r : h.station.of(MAVLINK_MSG_ID_PARAM_VALUE)) {
+        mavlink_param_value_t p{};
+        mavlink_msg_param_value_decode(&r.msg, &p);
+        out[std::string(p.param_id, strnlen(p.param_id, sizeof(p.param_id)))] = p;
+    }
+    return out;
+}
+
+std::int32_t as_int(const mavlink_param_value_t& p) {  // PX4 sends INT32 bytewise
+    std::int32_t v = 0;
+    std::memcpy(&v, &p.param_value, sizeof(v));
+    return v;
+}
+
+}  // namespace
+
+TEST(FcCore, ParamListReportsPx4ParametersFromTheConfig) {
+    Harness h(base_config());
+    h.run_until(1 * kS);
+    h.send(h.client.param_request_list());
+    const auto p = params(h);
+    ASSERT_EQ(p.size(), p.at("COM_OF_LOSS_T").param_count);
+    EXPECT_FLOAT_EQ(p.at("COM_OF_LOSS_T").param_value, 0.5F);
+    EXPECT_EQ(p.at("COM_OF_LOSS_T").param_type, MAV_PARAM_TYPE_REAL32);
+    EXPECT_EQ(as_int(p.at("COM_OBL_RC_ACT")), 5);  // Hold
+    EXPECT_FLOAT_EQ(p.at("MPC_XY_VEL_MAX").param_value, 12.0F);
+    EXPECT_FLOAT_EQ(p.at("BAT1_CAPACITY").param_value, 10000.0F);
+    EXPECT_EQ(as_int(p.at("BAT1_N_CELLS")), 6);
+    EXPECT_EQ(as_int(p.at("MAV_SYS_ID")), 1);
+    std::set<std::uint16_t> indices;
+    for (const auto& kv : p) {
+        indices.insert(kv.second.param_index);
+    }
+    EXPECT_EQ(indices.size(), p.size());
+}
+
+TEST(FcCore, ParamReadByNameAndByIndex) {
+    Harness h(base_config());
+    h.run_until(1 * kS);
+    h.send(h.client.param_request_read("BAT1_N_CELLS"));
+    ASSERT_EQ(params(h).size(), 1U);
+    const std::uint16_t index = params(h).at("BAT1_N_CELLS").param_index;
+    h.station.log.clear();
+    h.send(h.client.param_request_read("", static_cast<std::int16_t>(index)));
+    EXPECT_EQ(params(h).count("BAT1_N_CELLS"), 1U);
+    h.station.log.clear();
+    h.send(h.client.param_request_read("NO_SUCH_PARAM"));
+    EXPECT_TRUE(params(h).empty());  // PX4 stays silent for unknown names
+}
+
+// Setting COM_OF_LOSS_T changes the offboard-loss timeout, as on PX4.
+TEST(FcCore, ParamSetChangesTheOffboardLossTimeout) {
+    Harness h(base_config());
+    h.run_until(1 * kS);
+    h.send(h.client.param_set("COM_OF_LOSS_T", 1.0F));
+    EXPECT_FLOAT_EQ(params(h).at("COM_OF_LOSS_T").param_value, 1.0F);
+    fly_offboard(h, 10 * kS);
+    const TimeNs last = h.core.last_setpoint_time();
+    h.run_until(last + 900 * kMs);
+    EXPECT_EQ(h.core.mode(), Mode::Offboard);
+    h.run_until(last + 1001 * kMs);
+    EXPECT_EQ(h.core.mode(), Mode::Hold);
+    EXPECT_TRUE(has_text(h, "Offboard lost >1000ms: HOLD"));
+}
+
+TEST(FcCore, ParamSetOutOfRangeOrReadOnlyKeepsTheValue) {
+    Harness h(base_config());
+    h.run_until(1 * kS);
+    h.send(h.client.param_set("COM_OF_LOSS_T", 99.0F));
+    EXPECT_FLOAT_EQ(params(h).at("COM_OF_LOSS_T").param_value, 0.5F);
+    h.station.log.clear();
+    h.send(h.client.param_set("BAT1_CAPACITY", 1.0F));
+    EXPECT_FLOAT_EQ(params(h).at("BAT1_CAPACITY").param_value, 10000.0F);
+}
+
+TEST(FcCore, MissionListIsEmptyAndUploadsAreUnsupported) {
+    Harness h(base_config());
+    h.run_until(1 * kS);
+    h.send(h.client.mission_request_list());
+    const auto counts = h.station.of(MAVLINK_MSG_ID_MISSION_COUNT);
+    ASSERT_EQ(counts.size(), 1U);
+    mavlink_mission_count_t mc{};
+    mavlink_msg_mission_count_decode(&counts[0].msg, &mc);
+    EXPECT_EQ(mc.count, 0);
+    EXPECT_EQ(mc.target_system, 255);
+    h.send(h.client.mission_count(3));
+    const auto acks = h.station.of(MAVLINK_MSG_ID_MISSION_ACK);
+    ASSERT_EQ(acks.size(), 1U);
+    EXPECT_EQ(mavlink_msg_mission_ack_get_type(&acks[0].msg), MAV_MISSION_UNSUPPORTED);
 }

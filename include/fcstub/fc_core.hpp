@@ -26,6 +26,7 @@
 #include "fcstub/link_model.hpp"
 #include "fcstub/mav_codec.hpp"
 #include "fcstub/mode_machine.hpp"
+#include "fcstub/param_table.hpp"
 #include "fcstub/scheduler.hpp"
 #include "fcstub/setpoint_gate.hpp"
 #include "fcstub/time.hpp"
@@ -124,6 +125,10 @@ private:
     void handle_setpoint(const SetpointMsg& msg) noexcept;
     void handle_command(const CommandLongMsg& msg) noexcept;
     void handle_timesync(const TimesyncMsg& msg) noexcept;
+    void send_param(Param p) noexcept;
+    void handle_param_set(const ParamSetMsg& msg) noexcept;
+    void handle_mission(const MissionRequestListMsg& msg) noexcept;
+    void handle_mission(const MissionCountMsg& msg) noexcept;
     ModeChange execute_command(const CommandLongMsg& msg) noexcept;
     bool addressed_to_us(std::uint8_t target_system, std::uint8_t target_component) const noexcept;
 

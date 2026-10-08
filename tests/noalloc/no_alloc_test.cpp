@@ -119,6 +119,11 @@ TEST(NoAlloc, CoreRunsSixtySecondsWithAllFaultsWithoutAllocating) {
         }
     }
     h.send(h.client.velocity(1.0F / 0.0F, 0, 0));  // rejected setpoint path (status text)
+    h.send(h.client.param_request_list());
+    h.send(h.client.param_request_read("BAT1_N_CELLS"));
+    h.send(h.client.param_set("COM_OF_LOSS_T", 0.8F));
+    h.send(h.client.mission_request_list());
+    h.send(h.client.mission_count(2));
     h.run_until(61 * kNsPerS);
     g_counting = false;
 

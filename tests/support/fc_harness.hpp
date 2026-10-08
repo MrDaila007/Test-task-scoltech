@@ -12,6 +12,7 @@
 
 #include <array>
 #include <cstdint>
+#include <cstring>
 #include <string>
 #include <vector>
 
@@ -90,6 +91,36 @@ public:
         mavlink_msg_set_position_target_local_ned_pack_status(255, 190, &status_, &msg_, 0, 1, 1,
                                                               MAV_FRAME_LOCAL_NED, 3527, 0, 0, 0,
                                                               vn, ve, vd, 0, 0, 0, 0, 0);
+        return finish();
+    }
+    Bytes param_request_list() {
+        mavlink_msg_param_request_list_pack_status(255, 190, &status_, &msg_, 1, 1);
+        return finish();
+    }
+    // MAVLink copies all 16 id bytes: pad the name.
+    static std::array<char, 16> param_id(const char* id) {
+        std::array<char, 16> out{};
+        std::memcpy(out.data(), id, strnlen(id, out.size()));
+        return out;
+    }
+    Bytes param_request_read(const char* id, std::int16_t index = -1) {
+        mavlink_msg_param_request_read_pack_status(255, 190, &status_, &msg_, 1, 1,
+                                                   param_id(id).data(), index);
+        return finish();
+    }
+    Bytes param_set(const char* id, float value, std::uint8_t type = MAV_PARAM_TYPE_REAL32) {
+        mavlink_msg_param_set_pack_status(255, 190, &status_, &msg_, 1, 1, param_id(id).data(),
+                                          value, type);
+        return finish();
+    }
+    Bytes mission_request_list() {
+        mavlink_msg_mission_request_list_pack_status(255, 190, &status_, &msg_, 1, 1,
+                                                     MAV_MISSION_TYPE_MISSION);
+        return finish();
+    }
+    Bytes mission_count(std::uint16_t count) {
+        mavlink_msg_mission_count_pack_status(255, 190, &status_, &msg_, 1, 1, count,
+                                              MAV_MISSION_TYPE_MISSION, 0);
         return finish();
     }
     Bytes timesync(std::int64_t ts1) {

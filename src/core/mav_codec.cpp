@@ -131,8 +131,69 @@ RxMessage decode_timesync(const mavlink_message_t& msg) noexcept {
     return out;
 }
 
+RxMessage decode_param(const mavlink_message_t& msg) noexcept {
+    if (msg.msgid == MAVLINK_MSG_ID_PARAM_REQUEST_LIST) {
+        mavlink_param_request_list_t p{};
+        mavlink_msg_param_request_list_decode(&msg, &p);
+        ParamRequestListMsg out;
+        fill_header(out, msg);
+        out.target_system = p.target_system;
+        out.target_component = p.target_component;
+        return out;
+    }
+    if (msg.msgid == MAVLINK_MSG_ID_PARAM_REQUEST_READ) {
+        mavlink_param_request_read_t p{};
+        mavlink_msg_param_request_read_decode(&msg, &p);
+        ParamRequestReadMsg out;
+        fill_header(out, msg);
+        out.target_system = p.target_system;
+        out.target_component = p.target_component;
+        std::memcpy(out.id.data(), p.param_id, out.id.size());
+        out.index = p.param_index;
+        return out;
+    }
+    mavlink_param_set_t p{};
+    mavlink_msg_param_set_decode(&msg, &p);
+    ParamSetMsg out;
+    fill_header(out, msg);
+    out.target_system = p.target_system;
+    out.target_component = p.target_component;
+    std::memcpy(out.id.data(), p.param_id, out.id.size());
+    out.value = p.param_value;
+    out.type = p.param_type;
+    return out;
+}
+
+RxMessage decode_mission(const mavlink_message_t& msg) noexcept {
+    if (msg.msgid == MAVLINK_MSG_ID_MISSION_REQUEST_LIST) {
+        mavlink_mission_request_list_t m{};
+        mavlink_msg_mission_request_list_decode(&msg, &m);
+        MissionRequestListMsg out;
+        fill_header(out, msg);
+        out.target_system = m.target_system;
+        out.target_component = m.target_component;
+        out.mission_type = m.mission_type;
+        return out;
+    }
+    mavlink_mission_count_t m{};
+    mavlink_msg_mission_count_decode(&msg, &m);
+    MissionCountMsg out;
+    fill_header(out, msg);
+    out.target_system = m.target_system;
+    out.target_component = m.target_component;
+    out.mission_type = m.mission_type;
+    return out;
+}
+
 RxMessage decode(const mavlink_message_t& msg) noexcept {
     switch (msg.msgid) {
+        case MAVLINK_MSG_ID_PARAM_REQUEST_LIST:
+        case MAVLINK_MSG_ID_PARAM_REQUEST_READ:
+        case MAVLINK_MSG_ID_PARAM_SET:
+            return decode_param(msg);
+        case MAVLINK_MSG_ID_MISSION_REQUEST_LIST:
+        case MAVLINK_MSG_ID_MISSION_COUNT:
+            return decode_mission(msg);
         case MAVLINK_MSG_ID_SET_POSITION_TARGET_LOCAL_NED:
             return decode_setpoint(msg);
         case MAVLINK_MSG_ID_COMMAND_LONG:
@@ -268,6 +329,31 @@ FrameBuf MavEncoder::timesync(const TimesyncData& d) noexcept {
     mavlink_message_t msg{};
     mavlink_msg_timesync_pack_status(system_id_, component_id_, as_status(status_), &msg, d.tc1,
                                      d.ts1, d.target_system, d.target_component);
+    return to_frame(msg);
+}
+
+FrameBuf MavEncoder::param_value(const ParamValueData& d) noexcept {
+    std::array<char, 16> id{};  // MAVLink param_id: 16 bytes, NUL only if shorter
+    std::memcpy(id.data(), d.id, strnlen(d.id, id.size()));
+    mavlink_message_t msg{};
+    mavlink_msg_param_value_pack_status(system_id_, component_id_, as_status(status_), &msg,
+                                        id.data(), d.value, d.type, d.count, d.index);
+    return to_frame(msg);
+}
+
+FrameBuf MavEncoder::mission_count_empty(const MissionReplyData& d) noexcept {
+    mavlink_message_t msg{};
+    mavlink_msg_mission_count_pack_status(system_id_, component_id_, as_status(status_), &msg,
+                                          d.target_system, d.target_component, 0, d.mission_type,
+                                          0);
+    return to_frame(msg);
+}
+
+FrameBuf MavEncoder::mission_ack(const MissionReplyData& d, std::uint8_t result) noexcept {
+    mavlink_message_t msg{};
+    mavlink_msg_mission_ack_pack_status(system_id_, component_id_, as_status(status_), &msg,
+                                        d.target_system, d.target_component, result, d.mission_type,
+                                        0);
     return to_frame(msg);
 }
 

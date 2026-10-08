@@ -64,6 +64,22 @@ void FcCore::on_message(const RxMessage& msg) noexcept {
                 handle_command(m);
             } else if constexpr (std::is_same_v<T, TimesyncMsg>) {
                 handle_timesync(m);
+            } else if constexpr (std::is_same_v<T, ParamRequestListMsg>) {
+                if (addressed_to_us(m.target_system, m.target_component)) {
+                    for (std::size_t i = 0; i < kParamCount; ++i) {
+                        send_param(static_cast<Param>(i));
+                    }
+                }
+            } else if constexpr (std::is_same_v<T, ParamRequestReadMsg>) {
+                const auto p = m.index >= 0 ? param_at(m.index) : find_param(m.id);
+                if (p && addressed_to_us(m.target_system, m.target_component)) {
+                    send_param(*p);  // unknown names get no answer, as on PX4
+                }
+            } else if constexpr (std::is_same_v<T, ParamSetMsg>) {
+                handle_param_set(m);
+            } else if constexpr (std::is_same_v<T, MissionRequestListMsg> ||
+                                 std::is_same_v<T, MissionCountMsg>) {
+                handle_mission(m);
             }
         },
         msg);
@@ -140,6 +156,39 @@ void FcCore::handle_command(const CommandLongMsg& msg) noexcept {
     }
     send(encoder_.command_ack(
         {msg.command, static_cast<std::uint8_t>(result), msg.source_system, msg.source_component}));
+}
+
+void FcCore::send_param(Param p) noexcept {
+    send(encoder_.param_value({param_name(p), param_wire_value(p, cfg_), param_type(p),
+                               static_cast<std::uint16_t>(kParamCount),
+                               static_cast<std::uint16_t>(p)}));
+}
+
+void FcCore::handle_param_set(const ParamSetMsg& msg) noexcept {
+    const auto p = find_param(msg.id);
+    if (!p || !addressed_to_us(msg.target_system, msg.target_component)) {
+        return;
+    }
+    if (param_set(*p, msg.value, msg.type, cfg_)) {
+        modes_.set_offboard_timeout(ms_to_ns(cfg_.modes.offboard_timeout_ms));
+    }
+    send_param(*p);  // the current value either way, as PX4 answers a PARAM_SET
+}
+
+// The stub flies no missions: the plan is always empty and uploads are refused,
+// so ground stations and SDKs that ask do not wait for a timeout.
+void FcCore::handle_mission(const MissionRequestListMsg& msg) noexcept {
+    if (addressed_to_us(msg.target_system, msg.target_component)) {
+        send(encoder_.mission_count_empty(
+            {msg.mission_type, msg.source_system, msg.source_component}));
+    }
+}
+
+void FcCore::handle_mission(const MissionCountMsg& msg) noexcept {
+    if (addressed_to_us(msg.target_system, msg.target_component)) {
+        send(encoder_.mission_ack({msg.mission_type, msg.source_system, msg.source_component},
+                                  kMissionUnsupported));
+    }
 }
 
 void FcCore::handle_timesync(const TimesyncMsg& msg) noexcept {

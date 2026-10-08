@@ -103,6 +103,20 @@ struct CommandAckData {
     std::uint8_t target_system, target_component;
 };
 
+struct ParamValueData {
+    const char* id;  // up to 16 characters
+    float value;     // wire value (INT32 bytewise)
+    std::uint8_t type;
+    std::uint16_t count, index;
+};
+
+struct MissionReplyData {
+    std::uint8_t mission_type;
+    std::uint8_t target_system, target_component;
+};
+
+inline constexpr std::uint8_t kMissionUnsupported = 3;  // MAV_MISSION_UNSUPPORTED
+
 struct TimesyncData {
     std::int64_t tc1, ts1;  // ns
     std::uint8_t target_system, target_component;
@@ -121,6 +135,9 @@ public:
     FrameBuf statustext(const StatusTextData& d) noexcept;
     FrameBuf command_ack(const CommandAckData& d) noexcept;
     FrameBuf timesync(const TimesyncData& d) noexcept;
+    FrameBuf param_value(const ParamValueData& d) noexcept;
+    FrameBuf mission_count_empty(const MissionReplyData& d) noexcept;
+    FrameBuf mission_ack(const MissionReplyData& d, std::uint8_t result) noexcept;
 
     // Restart the tx sequence at 0, as a rebooted autopilot does.
     void reset_sequence() noexcept;
@@ -184,11 +201,40 @@ struct TimesyncMsg : RxHeader {
     std::uint8_t target_system = 0, target_component = 0;  // 0 when sent without extensions
 };
 
+struct ParamRequestListMsg : RxHeader {
+    std::uint8_t target_system = 0, target_component = 0;
+};
+
+struct ParamRequestReadMsg : RxHeader {
+    std::uint8_t target_system = 0, target_component = 0;
+    std::array<char, 16> id{};
+    std::int16_t index = -1;  // -1: look up by id
+};
+
+struct ParamSetMsg : RxHeader {
+    std::uint8_t target_system = 0, target_component = 0;
+    std::array<char, 16> id{};
+    float value = 0;
+    std::uint8_t type = 0;
+};
+
+struct MissionRequestListMsg : RxHeader {
+    std::uint8_t target_system = 0, target_component = 0;
+    std::uint8_t mission_type = 0;
+};
+
+struct MissionCountMsg : RxHeader {  // an upload attempt
+    std::uint8_t target_system = 0, target_component = 0;
+    std::uint8_t mission_type = 0;
+};
+
 struct OtherMsg : RxHeader {
     std::uint32_t msgid = 0;
 };
 
-using RxMessage = std::variant<SetpointMsg, CommandLongMsg, TimesyncMsg, OtherMsg>;
+using RxMessage =
+    std::variant<SetpointMsg, CommandLongMsg, TimesyncMsg, ParamRequestListMsg, ParamRequestReadMsg,
+                 ParamSetMsg, MissionRequestListMsg, MissionCountMsg, OtherMsg>;
 
 class RxHandler {
 public:

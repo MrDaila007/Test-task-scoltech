@@ -71,6 +71,9 @@ public:
     // vehicle to Hold or Manual. Returns false when disarmed or not applicable.
     bool force(Mode target) noexcept;
 
+    // PARAM_SET COM_OF_LOSS_T: takes effect for the next timeout check.
+    void set_offboard_timeout(TimeNs timeout) noexcept { timings_.offboard_timeout = timeout; }
+
     Mode mode() const noexcept { return mode_; }
     bool armed() const noexcept;
 

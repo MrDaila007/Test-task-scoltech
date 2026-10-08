@@ -14,6 +14,7 @@ add_library(fcstub_core STATIC
     core/link_model.cpp
     core/mav_codec.cpp
     core/mode_machine.cpp
+    core/param_table.cpp
     core/rng.cpp
     core/scheduler.cpp
     core/setpoint_gate.cpp

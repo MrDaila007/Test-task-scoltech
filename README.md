@@ -83,6 +83,11 @@
 
 Ответы: `COMMAND_ACK`, `TIMESYNC`.
 
+**Параметры и миссии** — минимально, чтобы клиенты не ждали таймаутов ([`param_table.cpp`](src/core/param_table.cpp)):
+- `PARAM_REQUEST_LIST`, `PARAM_REQUEST_READ`, `PARAM_SET` для шести параметров PX4: `COM_OF_LOSS_T`, `COM_OBL_RC_ACT` (= 5, Hold), `MPC_XY_VEL_MAX`, `BAT1_CAPACITY`, `BAT1_N_CELLS`, `MAV_SYS_ID`. Значения берутся из конфигурации; целые идут побайтно в поле float, как у PX4.
+- Записать можно только `COM_OF_LOSS_T` (0,05–10 с): он меняет таймаут потери заданий во время работы. Остальные только для чтения; на `PARAM_SET` приходит текущее значение.
+- Миссий нет: `MISSION_REQUEST_LIST` получает `MISSION_COUNT` = 0, загрузка миссии — `MISSION_ACK` `UNSUPPORTED`.
+
 **Задания и команды:**
 - `SET_POSITION_TARGET_LOCAL_NED`: скорость (маска 3527), положение (3576), положение со скоростью (3520). Невалидные задания отбрасываются и **не продлевают** таймаут. Скорость выше `vehicle.v_max_mps` принимается и выполняется на пределе, как в PX4. Задание положения за геозоной или ниже земли **отбрасывается** — в отличие от PX4, который его примет и сработает failsafe по геозоне.
 - `COMMAND_LONG`: `ARM_DISARM`, `DO_SET_MODE` с режимами PX4. На повтор команды отвечает прежний `ACK`. Как в PX4, снятие с охраны в воздухе отклоняется, если не передан `param2 = 21196` (принудительно).
@@ -129,7 +134,7 @@
 | `./scripts/quality.sh` | cppcheck (0 замечаний) и clang-format |
 | `./scripts/coverage.sh` | покрытие `src/` (нужен `gcovr`, порог 80 % строк): сейчас **92,6 % строк**, 60,5 % ветвлений |
 | `./scripts/verify_clean_machine.sh` | чистые контейнеры из `git archive HEAD`: Ubuntu 22.04 и 24.04 с g++, 22.04 с clang++, покрытие, arm64 (qemu) — все PASS |
-| `.venv/bin/python scripts/mavsdk_check.py` | настоящий MAVSDK 2.8 (`pip install "mavsdk>=2.8,<3"` в venv): подключение, arm, OFFBOARD по заданиям скорости, `in_air`, HOLD, отказ disarm в воздухе — все PASS |
+| `.venv/bin/python scripts/mavsdk_check.py` | настоящий MAVSDK 2.8 (`pip install "mavsdk>=2.8,<3"` в venv): подключение, параметры (чтение, запись, целый), пустая миссия, arm, OFFBOARD по заданиям скорости, `in_air`, HOLD, отказ disarm в воздухе — все 11 шагов PASS |
 | `./scripts/measure_jitter.sh idle 60` | замер джиттера на этой машине |
 
 Ключевые проверки:
@@ -183,7 +188,8 @@
 | Файл | Что делает |
 |---|---|
 | [`fc_core.cpp`](src/core/fc_core.cpp), [`fc_core.hpp`](include/fcstub/fc_core.hpp) | `FcCore`: порядок работы на шаге, перезагрузка (F2), смена режима автопилотом (F7) |
-| [`fc_core_rx.cpp`](src/core/fc_core_rx.cpp) | Входящие задания, `COMMAND_LONG` (arm/disarm, смена режима), ответ на TIMESYNC |
+| [`fc_core_rx.cpp`](src/core/fc_core_rx.cpp) | Входящие задания, `COMMAND_LONG` (arm/disarm, смена режима), ответ на TIMESYNC, параметры, миссии |
+| [`param_table.cpp`](src/core/param_table.cpp) | Параметры PX4 поверх конфигурации: имена, типы, запись `COM_OF_LOSS_T` |
 | [`fc_core_tx.cpp`](src/core/fc_core_tx.cpp) | Исходящая телеметрия, HEARTBEAT, STATUSTEXT |
 | [`mode_machine.cpp`](src/core/mode_machine.cpp) | Пять режимов, переходы, удержание по потере заданий > 500 мс |
 | [`setpoint_gate.cpp`](src/core/setpoint_gate.cpp) | Проверка заданий: маска, система координат, NaN, геозона |
@@ -255,6 +261,5 @@
 ## Ограничения и что не сделано
 
 - **Нет подписи MAVLink.** Управлять заглушкой может любой узел в сети.
-- **Нет протоколов параметров и миссий** (`PARAM_*`, `MISSION_*`). Некоторые клиенты (QGC) будут их запрашивать.
 - **Заглушка не инициирует TIMESYNC**, только отвечает на запросы.
 - **Тайминги на Jetson не измерены**, `SCHED_FIFO` на этой машине недоступен (нет прав). TSan не запускался: на ядре 6.8 он не стартует без `setarch -R`, а в коде один поток.

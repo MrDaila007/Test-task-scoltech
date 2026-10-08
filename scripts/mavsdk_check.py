@@ -4,7 +4,8 @@
 Starts the stub (real time, default ports as PX4 SITL: listens on 14580, sends to
 14540), connects MAVSDK on udp://:14540 and checks: arm, OFFBOARD with velocity
 setpoints, the vehicle climbs and moves, HOLD on request, a plain disarm in the
-air is denied. Exits 0 when every step passed.
+air is denied; parameters read and write, the mission plan is empty. Exits 0
+when every step passed.
 
     python3 -m venv .venv && .venv/bin/pip install "mavsdk>=2.8,<3"
     .venv/bin/python scripts/mavsdk_check.py [path/to/fc_stub]
@@ -47,6 +48,16 @@ async def check() -> None:
     await drone.connect(system_address="udp://:14540")
     await first(drone.core.connection_state(), lambda s: s.is_connected, 10)
     step("connected", True)
+
+    timeout = await drone.param.get_param_float("COM_OF_LOSS_T")
+    step("param read", abs(timeout - 0.5) < 1e-6, f"COM_OF_LOSS_T={timeout}")
+    await drone.param.set_param_float("COM_OF_LOSS_T", 0.8)
+    timeout = await drone.param.get_param_float("COM_OF_LOSS_T")
+    step("param write", abs(timeout - 0.8) < 1e-6, f"COM_OF_LOSS_T={timeout}")
+    cells = await drone.param.get_param_int("BAT1_N_CELLS")
+    step("int param", cells == 6, f"BAT1_N_CELLS={cells}")
+    plan = await drone.mission_raw.download_mission()
+    step("mission download", len(plan) == 0, "empty plan")
 
     await asyncio.sleep(2.5)  # the stub becomes ready to arm 2 s after boot
     await drone.action.arm()
