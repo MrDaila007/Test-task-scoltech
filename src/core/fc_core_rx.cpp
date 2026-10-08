@@ -20,6 +20,8 @@ const char* deny_text(DenyReason reason) noexcept {
             return "Denied: OFFBOARD needs setpoints";
         case DenyReason::NotRequestable:
             return "Denied: mode not supported";
+        case DenyReason::Overridden:
+            return "Denied: autopilot override";
         case DenyReason::None:
             break;
     }
@@ -95,6 +97,10 @@ ModeChange FcCore::execute_command(const CommandLongMsg& msg) noexcept {
             !mode_from_px4(msg.param[1], msg.param[2], target)) {
             return {AckResult::Unsupported, DenyReason::NotRequestable};
         }
+        const FaultWindow* override = schedule_.active(FaultType::ModeOverride, rx_now_);
+        if (target == Mode::Offboard && override != nullptr) {
+            return {AckResult::Denied, DenyReason::Overridden};
+        }
         return modes_.request_mode(target, rx_now_, gate_.last_valid_time());
     }
     return {AckResult::Unsupported, DenyReason::None};
@@ -115,6 +121,12 @@ void FcCore::handle_command(const CommandLongMsg& msg) noexcept {
         dedup_.remember(key, rx_now_, result);
         if (change.result == AckResult::Accepted) {
             announce_mode(before);
+        } else if (change.reason == DenyReason::Overridden) {
+            const FaultWindow* w = schedule_.active(FaultType::ModeOverride, rx_now_);
+            const bool pilot = w != nullptr &&
+                               params_of<ModeOverrideParams>(*w).cause == OverrideCause::RcOverride;
+            send_text(kSeverityWarning,
+                      pilot ? "Denied: pilot has control" : "Denied: failsafe active");
         } else if (change.reason != DenyReason::None) {
             send_text(kSeverityWarning, deny_text(change.reason));
         }

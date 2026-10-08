@@ -28,7 +28,14 @@ enum class AckResult : std::uint8_t {
     Unsupported = 3,
 };
 
-enum class DenyReason : std::uint8_t { None, NotReady, Disarmed, NoSetpointStream, NotRequestable };
+enum class DenyReason : std::uint8_t {
+    None,
+    NotReady,
+    Disarmed,
+    NoSetpointStream,
+    NotRequestable,
+    Overridden
+};
 
 struct ModeChange {
     AckResult result;
@@ -58,6 +65,10 @@ public:
 
     ModeChange request_arm(bool arm, TimeNs now) noexcept;
     ModeChange request_mode(Mode target, TimeNs now, TimeNs last_valid_setpoint) noexcept;
+
+    // The autopilot's own decision (failsafe, pilot takeover): switches an armed
+    // vehicle to Hold or Manual. Returns false when disarmed or not applicable.
+    bool force(Mode target) noexcept;
 
     Mode mode() const noexcept { return mode_; }
     bool armed() const noexcept;

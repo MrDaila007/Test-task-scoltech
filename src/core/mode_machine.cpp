@@ -72,6 +72,14 @@ ModeChange ModeMachine::request_mode(Mode target, TimeNs now, TimeNs last_valid_
     return kAccepted;
 }
 
+bool ModeMachine::force(Mode target) noexcept {
+    if (!armed() || (target != Mode::Hold && target != Mode::Manual)) {
+        return false;
+    }
+    mode_ = target;
+    return true;
+}
+
 TimeNs ModeMachine::next_deadline(TimeNs last_valid_setpoint) const noexcept {
     if (mode_ == Mode::NotReady) {
         return ready_at_;

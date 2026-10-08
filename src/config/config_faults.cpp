@@ -15,7 +15,13 @@ const EnumNames<FaultType> kFaultTypes = {{"estimator_freeze", FaultType::Estima
                                           {"clock_fault", FaultType::ClockFault},
                                           {"link", FaultType::Link},
                                           {"gnss", FaultType::Gnss},
-                                          {"battery", FaultType::Battery}};
+                                          {"battery", FaultType::Battery},
+                                          {"mode_override", FaultType::ModeOverride}};
+const EnumNames<OverrideTarget> kOverrideTargets = {{"hold", OverrideTarget::Hold},
+                                                    {"manual", OverrideTarget::Manual}};
+const EnumNames<OverrideCause> kOverrideCauses = {{"rc_override", OverrideCause::RcOverride},
+                                                  {"low_battery", OverrideCause::LowBattery},
+                                                  {"geofence", OverrideCause::Geofence}};
 const EnumNames<LinkDirection> kDirections = {
     {"down", LinkDirection::Down}, {"up", LinkDirection::Up}, {"both", LinkDirection::Both}};
 const EnumNames<GnssKind> kGnssKinds = {{"jump", GnssKind::Jump}, {"drift", GnssKind::Drift}};
@@ -83,6 +89,12 @@ FaultParams parse_fault_params(FaultType type, Section& s, FaultSpec& spec) {
             BatteryFaultParams p;
             s.number("capacity_factor", p.capacity_factor, 0.05, 1.0);
             s.number("r_int_factor", p.r_int_factor, 1.0, 50.0);
+            return p;
+        }
+        case FaultType::ModeOverride: {
+            ModeOverrideParams p;
+            s.enumeration("to", p.to, kOverrideTargets);
+            s.enumeration("cause", p.cause, kOverrideCauses);
             return p;
         }
     }

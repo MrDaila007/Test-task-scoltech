@@ -136,6 +136,10 @@ private:
         const bool offboard =
             (mavlink_msg_heartbeat_get_base_mode(&m) & MAV_MODE_FLAG_SAFETY_ARMED) &&
             (mavlink_msg_heartbeat_get_custom_mode(&m) & kPx4MainModeMask) == kPx4Offboard;
+        const bool streaming = cmd_ && t - cmd_->last_seen <= kStaleSetpointS;
+        if (!offboard && offboard_since_ && streaming) {
+            raise(t, Alarm::UnexpectedMode);
+        }
         if (!offboard) {
             offboard_since_.reset();
         } else if (!offboard_since_) {
@@ -312,6 +316,8 @@ const char* alarm_name(Alarm a) {
             return "tracking_error";
         case Alarm::BatteryMismatch:
             return "battery_mismatch";
+        case Alarm::UnexpectedMode:
+            return "unexpected_mode";
     }
     return "?";
 }

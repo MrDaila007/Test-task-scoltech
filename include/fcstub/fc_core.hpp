@@ -67,7 +67,7 @@ struct CoreStats {
     LinkStats downlink;
 };
 
-// Bit i set = fault type i active (EstimatorFreeze=0 ... Battery=5).
+// Bit i set = fault type i active (EstimatorFreeze=0 ... ModeOverride=6).
 using FaultMask = std::uint32_t;
 
 class FcCore final : private RxHandler {
@@ -107,6 +107,7 @@ private:
     void process_uplink(TimeNs now) noexcept;
     void integrate_to(TimeNs now) noexcept;
     void handle_mode_events(TimeNs now) noexcept;
+    void handle_overrides(TimeNs now) noexcept;
     void flush_downlink(TimeNs now, FrameSink& sink) noexcept;
     MotionTarget motion_target() const noexcept;
     const LinkFaultParams* link_fault(TimeNs now, bool uplink, Rng** rng) noexcept;
@@ -150,6 +151,7 @@ private:
     bool reject_text_sent_ = false;  // rate limit for "Setpoint rejected" texts
     bool started_ = false;
     bool rebooted_once_ = false;
+    std::uint32_t overrides_applied_ = 0;  // bit = fault window index (kMaxFaults <= 32)
     CoreStats stats_{};
 };
 

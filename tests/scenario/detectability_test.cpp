@@ -198,3 +198,15 @@ TEST(Detectability, F6VoltageSagIsCaughtUnderLoad) {
     EXPECT_GE(t, 20.0) << describe(r.alarms);
     EXPECT_LE(t, 26.0) << describe(r.alarms);
 }
+
+TEST(Detectability, F7PilotTakeoverIsSeenInTheNextHeartbeat) {
+    const ScenarioRun r = run_scenario("f7_mode_override");
+    const double t = first(r.alarms, Alarm::UnexpectedMode);
+    EXPECT_GE(t, 30.0) << describe(r.alarms);
+    EXPECT_LE(t, 31.0) << describe(r.alarms);  // HEARTBEAT is 1 Hz
+}
+
+TEST(Detectability, OffboardLossIsNotAnUnexpectedModeChange) {
+    const ScenarioRun r = run_scenario("clean");  // the stream ends at 58 s: HOLD by timeout
+    EXPECT_LT(first(r.alarms, Alarm::UnexpectedMode), 0.0) << describe(r.alarms);
+}

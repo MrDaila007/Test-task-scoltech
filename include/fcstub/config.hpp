@@ -99,7 +99,7 @@ struct SimConfig {
 
 // --- faults ------------------------------------------------------------------
 
-enum class FaultType { EstimatorFreeze, FcReboot, ClockFault, Link, Gnss, Battery };
+enum class FaultType { EstimatorFreeze, FcReboot, ClockFault, Link, Gnss, Battery, ModeOverride };
 enum class LinkDirection { Down, Up, Both };
 enum class GnssKind { Jump, Drift };
 
@@ -140,8 +140,19 @@ struct BatteryFaultParams {
     double r_int_factor = 1.0;     // internal resistance multiplier (weak cell, bad joint)
 };
 
-using FaultParams = std::variant<EstimatorFreezeParams, FcRebootParams, ClockFaultParams,
-                                 LinkFaultParams, GnssFaultParams, BatteryFaultParams>;
+// F7: the autopilot leaves OFFBOARD on its own at the window start and refuses
+// OFFBOARD until the window ends (pilot takeover, battery or geofence failsafe).
+enum class OverrideTarget { Hold, Manual };
+enum class OverrideCause { RcOverride, LowBattery, Geofence };
+
+struct ModeOverrideParams {
+    OverrideTarget to = OverrideTarget::Hold;
+    OverrideCause cause = OverrideCause::RcOverride;
+};
+
+using FaultParams =
+    std::variant<EstimatorFreezeParams, FcRebootParams, ClockFaultParams, LinkFaultParams,
+                 GnssFaultParams, BatteryFaultParams, ModeOverrideParams>;
 
 struct FaultSpec {
     FaultType type = FaultType::EstimatorFreeze;

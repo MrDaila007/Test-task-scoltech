@@ -239,3 +239,42 @@ TEST(FcCore, RebootSilencesThenRestartsEverything) {
     }
     EXPECT_LT(first_after_ms, 100U);  // the autopilot clock restarted
 }
+
+// F7: the autopilot leaves OFFBOARD on its own (pilot takeover, battery or
+// geofence failsafe) while setpoints are still streaming, and refuses OFFBOARD
+// until the window ends.
+TEST(FcCore, ModeOverrideLeavesOffboardAndLocksItOut) {
+    Config cfg = base_config();
+    FaultSpec f;
+    f.type = FaultType::ModeOverride;
+    f.start_s = 10.0;
+    f.duration_s = 5.0;
+    f.params = ModeOverrideParams{OverrideTarget::Manual, OverrideCause::RcOverride};
+    cfg.faults.push_back(f);
+    Harness h(cfg);
+    fly_offboard(h, 10 * kS - kMs);
+    EXPECT_EQ(h.core.mode(), Mode::Offboard);
+    h.stream_velocity(11 * kS, 20.0, 2, 0, -1);
+    EXPECT_EQ(h.core.mode(), Mode::Manual);
+    EXPECT_TRUE(has_text(h, "Pilot took over: MANUAL"));
+    h.send(h.client.set_mode(kPx4MainOffboard));
+    EXPECT_EQ(acks(h).back().result, MAV_RESULT_DENIED);
+    EXPECT_TRUE(has_text(h, "Denied: pilot has control"));
+    h.stream_velocity(16 * kS, 20.0, 2, 0, -1);
+    h.send(h.client.set_mode(kPx4MainOffboard));
+    EXPECT_EQ(acks(h).back().result, MAV_RESULT_ACCEPTED);
+    EXPECT_EQ(h.core.mode(), Mode::Offboard);
+}
+
+TEST(FcCore, ModeOverrideOnTheGroundDoesNothing) {
+    Config cfg = base_config();
+    FaultSpec f;
+    f.type = FaultType::ModeOverride;
+    f.start_s = 5.0;
+    f.params = ModeOverrideParams{OverrideTarget::Hold, OverrideCause::LowBattery};
+    cfg.faults.push_back(f);
+    Harness h(cfg);
+    h.run_until(6 * kS);
+    EXPECT_EQ(h.core.mode(), Mode::Ready);
+    EXPECT_FALSE(has_text(h, "Low battery"));
+}

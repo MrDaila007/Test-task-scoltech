@@ -249,3 +249,16 @@ TEST(Config, BatteryFaultParses) {
     expect_error_at(kMinimal + "faults:\n  - {type: battery, start_s: 0, capacity_factor: 0}\n",
                     "faults[0].capacity_factor");
 }
+
+TEST(Config, ModeOverrideFaultParses) {
+    const auto cfg = load_config_from_string(
+        kMinimal +
+        "faults:\n  - {type: mode_override, start_s: 5, duration_s: 3, to: hold, "
+        "cause: geofence}\n");
+    ASSERT_EQ(cfg.faults.size(), 1U);
+    const auto& p = std::get<fcstub::ModeOverrideParams>(cfg.faults[0].params);
+    EXPECT_EQ(p.to, fcstub::OverrideTarget::Hold);
+    EXPECT_EQ(p.cause, fcstub::OverrideCause::Geofence);
+    expect_error_at(kMinimal + "faults:\n  - {type: mode_override, start_s: 5, to: offboard}\n",
+                    "faults[0].to");
+}

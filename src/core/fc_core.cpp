@@ -171,6 +171,31 @@ void FcCore::handle_mode_events(TimeNs now) noexcept {
     }
 }
 
+void FcCore::handle_overrides(TimeNs now) noexcept {
+    for (const FaultWindow& w : schedule_.windows()) {
+        const std::uint32_t bit = 1U << w.index;
+        if (w.type != FaultType::ModeOverride || w.start > now || (overrides_applied_ & bit) != 0) {
+            continue;
+        }
+        overrides_applied_ |= bit;
+        const auto& p = params_of<ModeOverrideParams>(w);
+        const Mode before = modes_.mode();
+        if (!modes_.force(p.to == OverrideTarget::Manual ? Mode::Manual : Mode::Hold)) {
+            continue;  // on the ground nothing happens
+        }
+        const char* cause = "Pilot took over";
+        if (p.cause == OverrideCause::LowBattery) {
+            cause = "Low battery failsafe";
+        } else if (p.cause == OverrideCause::Geofence) {
+            cause = "Geofence breached";
+        }
+        char text[51];
+        std::snprintf(text, sizeof(text), "%s: %s", cause, mode_name(modes_.mode()));
+        send_text(kSeverityCritical, text);
+        announce_mode(before);
+    }
+}
+
 void FcCore::flush_downlink(TimeNs now, FrameSink& sink) noexcept {
     while (downlink_.pop_due(now, scratch_)) {
         ++stats_.tx_frames;
@@ -189,6 +214,7 @@ void FcCore::advance_to(TimeNs now, FrameSink& sink) noexcept {
     process_uplink(now);
     integrate_to(now);
     handle_mode_events(now);
+    handle_overrides(now);
     Scheduler::DueList due{};
     const std::size_t n = scheduler_.due(now, due);
     for (std::size_t i = 0; i < n; ++i) {

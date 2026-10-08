@@ -18,6 +18,8 @@
 //   BatteryMismatch   reported remaining charge exceeds the charge implied by the
 //                     cell voltage (Li-ion 3.5..4.2 V, linear) by more than 25 %
 //                     for 5 s; the margin covers the IR drop at cruise current
+//   UnexpectedMode    the autopilot left OFFBOARD while the onboard computer was
+//                     still streaming setpoints (not a setpoint-loss HOLD)
 
 #include <cstdint>
 #include <string>
@@ -33,7 +35,8 @@ enum class Alarm {
     PositionJump,
     ClockDrift,
     TrackingError,
-    BatteryMismatch
+    BatteryMismatch,
+    UnexpectedMode
 };
 
 struct AlarmEvent {
