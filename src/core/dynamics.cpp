@@ -39,7 +39,7 @@ void Dynamics::halt() noexcept {
     state_.roll_rate = state_.pitch_rate = state_.yaw_rate = 0.0;
 }
 
-Vec3 Dynamics::velocity_command(const MotionTarget& t) const noexcept {
+Vec3 Dynamics::velocity_command(const MotionTarget& t, const VehicleState& est) const noexcept {
     Vec3 v_sp{};
     switch (t.kind) {
         case MotionKind::Velocity:
@@ -49,7 +49,7 @@ Vec3 Dynamics::velocity_command(const MotionTarget& t) const noexcept {
         case MotionKind::PositionVelocity: {
             const double ff = t.kind == MotionKind::PositionVelocity ? 1.0 : 0.0;
             for (std::size_t i = 0; i < 3; ++i) {
-                v_sp[i] = params_.pos_gain * (t.pos[i] - state_.pos[i]) + ff * t.vel[i];
+                v_sp[i] = params_.pos_gain * (t.pos[i] - est.pos[i]) + ff * t.vel[i];
             }
             break;
         }
@@ -60,10 +60,10 @@ Vec3 Dynamics::velocity_command(const MotionTarget& t) const noexcept {
     return saturate_norm(v_sp, params_.v_max_mps);
 }
 
-double Dynamics::yaw_rate_command(const MotionTarget& t) const noexcept {
+double Dynamics::yaw_rate_command(const MotionTarget& t, const VehicleState& est) const noexcept {
     double rate = 0.0;
     if (t.yaw_valid) {
-        rate = wrap_pi(t.yaw - state_.yaw) / params_.tau_s;
+        rate = wrap_pi(t.yaw - est.yaw) / params_.tau_s;
     } else if (t.yaw_rate_valid) {
         rate = t.yaw_rate;
     }
@@ -85,15 +85,16 @@ void Dynamics::update_attitude(double dt, double yaw_rate) noexcept {
     state_.yaw = wrap_pi(state_.yaw + yaw_rate * dt);
 }
 
-void Dynamics::step(double dt, const MotionTarget& target) noexcept {
+void Dynamics::step(double dt, const MotionTarget& target, const VehicleState& est) noexcept {
     if (target.kind == MotionKind::Disarmed) {
         halt();
         return;
     }
-    const Vec3 v_sp = velocity_command(target);
+    const Vec3 v_sp = velocity_command(target, est);
+    const double yaw_rate = yaw_rate_command(target, est);
     const double k = dt / params_.tau_s;
     for (std::size_t i = 0; i < 3; ++i) {
-        const double v_new = state_.vel[i] + (v_sp[i] - state_.vel[i]) * k;
+        const double v_new = state_.vel[i] + (v_sp[i] - est.vel[i]) * k;
         state_.accel[i] = (v_new - state_.vel[i]) / dt;
         state_.vel[i] = v_new;
         state_.pos[i] += v_new * dt;
@@ -103,7 +104,7 @@ void Dynamics::step(double dt, const MotionTarget& target) noexcept {
         state_.vel[2] = std::min(state_.vel[2], 0.0);
         state_.accel[2] = 0.0;
     }
-    update_attitude(dt, yaw_rate_command(target));
+    update_attitude(dt, yaw_rate);
 }
 
 }  // namespace fcstub

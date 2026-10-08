@@ -148,7 +148,7 @@ void FcCore::integrate_to(TimeNs now) noexcept {
     const double dt_s = ns_to_seconds(dt_);
     while (model_time_ + dt_ <= now) {
         model_time_ += dt_;
-        dyn_.step(dt_s, motion_target());
+        dyn_.step(dt_s, motion_target(), tap_.estimate());
         const Vec3& v = dyn_.state().vel;
         battery_.step(dt_s, modes_.armed(), std::hypot(v[0], v[1], v[2]));
         tap_.update(dyn_.state(), model_time_);

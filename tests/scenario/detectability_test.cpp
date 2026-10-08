@@ -70,6 +70,27 @@ double final_position_error(const fs::path& dir) {
     return std::stod(last.substr(start + 1, end - start - 1));
 }
 
+// Value of `column` in the first truth.csv row at or after `t_s`.
+double value_at(const fs::path& dir, double t_s, const std::string& column) {
+    std::ifstream in(dir / "truth.csv");
+    std::string header;
+    std::getline(in, header);
+    std::string row;
+    while (std::getline(in, row) && std::stod(row.substr(0, row.find(','))) < t_s) {
+    }
+    std::stringstream hs(header);
+    std::stringstream ls(row);
+    std::string name;
+    std::string value;
+    while (std::getline(hs, name, ',') && std::getline(ls, value, ',')) {
+        if (name == column) {
+            return std::stod(value);
+        }
+    }
+    ADD_FAILURE() << "no column " << column;
+    return 0.0;
+}
+
 }  // namespace
 
 TEST(Detectability, CleanRunRaisesNoAlarm) {
@@ -130,4 +151,10 @@ TEST(Detectability, F5GnssDriftIsNotDetectableYetTheErrorGrows) {
     const ScenarioRun r = run_scenario("f5_gnss_drift");
     EXPECT_TRUE(r.alarms.empty()) << describe(r.alarms);
     EXPECT_GE(final_position_error(r.dir), 10.0);  // 0.22 m/s for 50 s
+    // The autopilot flies its estimate: reported velocity follows the setpoint
+    // (2 m/s north), the real vehicle moves 0.2 m/s slower and 0.1 m/s west.
+    EXPECT_NEAR(value_at(r.dir, 50.0, "rep_vn"), 2.0, 0.01);
+    EXPECT_NEAR(value_at(r.dir, 50.0, "rep_ve"), 0.0, 0.01);
+    EXPECT_NEAR(value_at(r.dir, 50.0, "true_vn"), 1.8, 0.01);
+    EXPECT_NEAR(value_at(r.dir, 50.0, "true_ve"), -0.1, 0.01);
 }

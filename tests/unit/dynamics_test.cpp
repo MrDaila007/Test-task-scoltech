@@ -156,3 +156,28 @@ TEST(Battery, NeverBelowEmpty) {
     }
     EXPECT_DOUBLE_EQ(bat.soc(), 0.0);
 }
+
+// The autopilot closes its loops on its own estimate, not on the truth: a biased
+// estimate moves the real vehicle, and the estimate itself follows the setpoint.
+TEST(Dynamics, VelocityLoopClosesOnTheEstimate) {
+    Dynamics dyn = make_dynamics();
+    run(dyn, velocity(0, 0, -1), 2.0);
+    const int steps = static_cast<int>(std::lround(5.0 / kDt));
+    for (int i = 0; i < steps; ++i) {
+        fcstub::VehicleState est = dyn.state();
+        est.vel[0] += 0.2;  // estimate reads 0.2 m/s too fast northwards
+        dyn.step(kDt, velocity(2.0, 0, -1), est);
+    }
+    EXPECT_NEAR(dyn.state().vel[0], 1.8, 0.01);
+}
+
+TEST(Dynamics, PositionLoopClosesOnTheEstimate) {
+    Dynamics dyn = make_dynamics();
+    const int steps = static_cast<int>(std::lround(20.0 / kDt));
+    for (int i = 0; i < steps; ++i) {
+        fcstub::VehicleState est = dyn.state();
+        est.pos[0] += 5.0;  // estimate is 5 m north of the truth
+        dyn.step(kDt, position(10.0, 0.0, -5.0), est);
+    }
+    EXPECT_NEAR(dyn.state().pos[0], 5.0, 0.1);
+}

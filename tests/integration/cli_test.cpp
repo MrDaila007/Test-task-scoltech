@@ -54,7 +54,7 @@ TEST(Cli, SimPrintsTheGoldenHash) {
     const RunResult r =
         run("--config " + kFixtures + "golden_all_faults.yaml --sim --out " + out.string());
     EXPECT_EQ(r.exit_code, 0);
-    EXPECT_EQ(r.out, "sha256 4705f2d9a96716391717d09b1e2bc4787af82e7a393670aa4a51656f1044ab2d\n");
+    EXPECT_EQ(r.out, "sha256 7b1052e16e59f59ceee8bfe433e24e08ad94532e7d3fb551744711727acc891a\n");
 }
 
 TEST(Cli, PortInUseIs3) {
