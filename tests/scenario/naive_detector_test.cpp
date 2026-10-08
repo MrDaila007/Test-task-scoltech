@@ -17,7 +17,9 @@ using fcstub::test::Alarm;
 using fcstub::test::JournalRecord;
 
 constexpr std::uint32_t kOffboardMode = 6U << 16U;
+constexpr std::uint32_t kHoldMode = (4U << 16U) | (3U << 24U);
 constexpr std::uint16_t kVelocityMask = 3527;
+constexpr std::uint16_t kPositionMask = 3576;
 
 JournalRecord record(double t_s, std::uint8_t dir, const mavlink_message_t& m) {
     JournalRecord r{static_cast<std::int64_t>(t_s * 1e9), dir, {}};
@@ -27,7 +29,10 @@ JournalRecord record(double t_s, std::uint8_t dir, const mavlink_message_t& m) {
 }
 
 // 20 s of OFFBOARD flight north at `cmd_vn` while the autopilot reports `rep_vn`.
-std::vector<JournalRecord> flight(double cmd_vn, double rep_vn) {
+// With `leave_at_s` >= 0 the autopilot switches to HOLD then while the client
+// keeps streaming; `mask` picks velocity or position setpoints.
+std::vector<JournalRecord> flight(double cmd_vn, double rep_vn, double leave_at_s = -1.0,
+                                  std::uint16_t mask = kVelocityMask) {
     std::vector<JournalRecord> j;
     // Separate channels keep the downlink sequence free of gaps.
     mavlink_get_channel_status(MAVLINK_COMM_0)->current_tx_seq = 0;
@@ -38,14 +43,13 @@ std::vector<JournalRecord> flight(double cmd_vn, double rep_vn) {
         if (i % 10 == 0) {
             mavlink_msg_heartbeat_pack_chan(
                 1, 1, MAVLINK_COMM_0, &m, MAV_TYPE_QUADROTOR, MAV_AUTOPILOT_PX4,
-                MAV_MODE_FLAG_CUSTOM_MODE_ENABLED | MAV_MODE_FLAG_SAFETY_ARMED, kOffboardMode,
-                MAV_STATE_ACTIVE);
+                MAV_MODE_FLAG_CUSTOM_MODE_ENABLED | MAV_MODE_FLAG_SAFETY_ARMED,
+                leave_at_s >= 0.0 && t >= leave_at_s ? kHoldMode : kOffboardMode, MAV_STATE_ACTIVE);
             down(t, m);
         }
         mavlink_msg_set_position_target_local_ned_pack_chan(
             255, 190, MAVLINK_COMM_1, &m, static_cast<std::uint32_t>(t * 1000), 1, 1,
-            MAV_FRAME_LOCAL_NED, kVelocityMask, 0, 0, 0, static_cast<float>(cmd_vn), 0, 0, 0, 0, 0,
-            0, 0);
+            MAV_FRAME_LOCAL_NED, mask, 0, 0, 0, static_cast<float>(cmd_vn), 0, 0, 0, 0, 0, 0, 0);
         j.push_back(record(t, 1, m));
         const auto lat = static_cast<std::int32_t>(557558000 + rep_vn * t / 111195.0 * 1e7);
         mavlink_msg_global_position_int_pack_chan(
@@ -75,4 +79,9 @@ TEST(NaiveDetector, TrackingErrorFiresWhenTheVehicleDoesNotFollow) {
 TEST(NaiveDetector, TrackingIsSilentWhenTheVehicleFollows) {
     const auto alarms = fcstub::test::detect(flight(2.0, 2.0));
     EXPECT_TRUE(alarms.empty());
+}
+
+TEST(NaiveDetector, ModeChangeUnderAPositionStreamIsUnexpected) {
+    const auto alarms = fcstub::test::detect(flight(0.0, 0.0, 10.0, kPositionMask));
+    EXPECT_TRUE(has(alarms, Alarm::UnexpectedMode));
 }

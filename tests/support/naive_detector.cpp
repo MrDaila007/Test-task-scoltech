@@ -83,6 +83,7 @@ public:
         if (m.msgid != MAVLINK_MSG_ID_SET_POSITION_TARGET_LOCAL_NED) {
             return;
         }
+        last_setpoint_ = t;  // any setpoint keeps the stream alive
         mavlink_set_position_target_local_ned_t sp{};
         mavlink_msg_set_position_target_local_ned_decode(&m, &sp);
         if ((sp.type_mask | 1024U | 2048U) != kVelocityOnlyMask) {  // yaw bits may vary
@@ -136,7 +137,7 @@ private:
         const bool offboard =
             (mavlink_msg_heartbeat_get_base_mode(&m) & MAV_MODE_FLAG_SAFETY_ARMED) &&
             (mavlink_msg_heartbeat_get_custom_mode(&m) & kPx4MainModeMask) == kPx4Offboard;
-        const bool streaming = cmd_ && t - cmd_->last_seen <= kStaleSetpointS;
+        const bool streaming = last_setpoint_ && t - *last_setpoint_ <= kStaleSetpointS;
         if (!offboard && offboard_since_ && streaming) {
             raise(t, Alarm::UnexpectedMode);
         }
@@ -247,6 +248,7 @@ private:
     std::optional<double> first_offset_;
     std::optional<double> offboard_since_;
     std::optional<VelocityCommand> cmd_;
+    std::optional<double> last_setpoint_;
     std::optional<double> tracking_bad_since_;
     std::optional<double> battery_bad_since_;
     std::deque<double> gaps_;
