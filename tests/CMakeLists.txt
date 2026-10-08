@@ -58,6 +58,8 @@ if(NOT CMAKE_CXX_FLAGS MATCHES "-fsanitize")
     target_compile_definitions(fcstub_timing_tests PRIVATE
         FCSTUB_BIN="$<TARGET_FILE:fc_stub>" FCSTUB_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
     add_dependencies(fcstub_timing_tests fc_stub)
+    # RUN_SERIAL: other tests running in parallel would load the CPUs and measure
+    # the scheduler, not the stub. The label matches -LE integration and -LE timing.
     gtest_discover_tests(fcstub_timing_tests DISCOVERY_TIMEOUT 30
-        PROPERTIES LABELS integration_timing)  # matched by -LE integration and -LE timing
+        PROPERTIES LABELS integration_timing RUN_SERIAL TRUE)
 endif()
