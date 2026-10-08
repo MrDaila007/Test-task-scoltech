@@ -19,7 +19,20 @@ constexpr double kFrozenSpeed = 0.5;   // m/s
 constexpr double kJumpResidual = 2.0;  // m
 constexpr double kDriftLimitNs = 5e6;  // 5 ms
 constexpr int kGapsPerSecond = 3;
+constexpr double kSettleS = 2.0;        // 5 tau of the velocity response plus margin
+constexpr double kTrackingLimit = 0.3;  // m/s
+constexpr double kTrackingWindowS = 1.0;
+constexpr double kStaleSetpointS = 0.5;
+constexpr std::uint16_t kVelocityOnlyMask = 3527;  // position and acceleration ignored
+constexpr std::uint32_t kPx4MainModeMask = 0x00FF0000U;
+constexpr std::uint32_t kPx4Offboard = 6U << 16U;
 constexpr double kMetresPerDegLat = 111195.0;
+
+struct VelocityCommand {
+    double vn = 0.0, ve = 0.0;
+    double since = 0.0;      // first time this value was seen
+    double last_seen = 0.0;  // last time it was received
+};
 
 struct PositionFix {
     double t;
@@ -40,6 +53,7 @@ public:
         switch (m.msgid) {
             case MAVLINK_MSG_ID_HEARTBEAT:
                 last_heartbeat_ = t;
+                on_heartbeat(t, m);
                 break;
             case MAVLINK_MSG_ID_ATTITUDE:
                 check_time(t, mavlink_msg_attitude_get_time_boot_ms(&m));
@@ -56,6 +70,23 @@ public:
     }
 
     void on_crc_error(double t) { note_gap(t); }
+
+    // Frames the onboard computer itself sent: the setpoints it commanded.
+    void on_uplink(double t, const mavlink_message_t& m) {
+        if (m.msgid != MAVLINK_MSG_ID_SET_POSITION_TARGET_LOCAL_NED) {
+            return;
+        }
+        mavlink_set_position_target_local_ned_t sp{};
+        mavlink_msg_set_position_target_local_ned_decode(&m, &sp);
+        if ((sp.type_mask | 1024U | 2048U) != kVelocityOnlyMask) {  // yaw bits may vary
+            cmd_.reset();  // only velocity setpoints are checked
+            return;
+        }
+        if (!cmd_ || std::fabs(cmd_->vn - sp.vx) > 0.01 || std::fabs(cmd_->ve - sp.vy) > 0.01) {
+            cmd_ = VelocityCommand{sp.vx, sp.vy, t, t};
+        }
+        cmd_->last_seen = t;
+    }
 
     std::vector<AlarmEvent> alarms;
 
@@ -94,6 +125,32 @@ private:
         last_boot_ms_ = boot_ms;
     }
 
+    void on_heartbeat(double t, const mavlink_message_t& m) {
+        const bool offboard =
+            (mavlink_msg_heartbeat_get_base_mode(&m) & MAV_MODE_FLAG_SAFETY_ARMED) &&
+            (mavlink_msg_heartbeat_get_custom_mode(&m) & kPx4MainModeMask) == kPx4Offboard;
+        if (!offboard) {
+            offboard_since_.reset();
+        } else if (!offboard_since_) {
+            offboard_since_ = t;
+        }
+    }
+
+    void check_tracking(const PositionFix& f) {
+        const bool settled = offboard_since_ && cmd_ && f.t - *offboard_since_ >= kSettleS &&
+                             f.t - cmd_->since >= kSettleS &&
+                             f.t - cmd_->last_seen <= kStaleSetpointS;
+        if (!settled || std::hypot(f.vn - cmd_->vn, f.ve - cmd_->ve) <= kTrackingLimit) {
+            tracking_bad_since_.reset();
+            return;
+        }
+        if (!tracking_bad_since_) {
+            tracking_bad_since_ = f.t;
+        } else if (f.t - *tracking_bad_since_ >= kTrackingWindowS) {
+            raise(f.t, Alarm::TrackingError);
+        }
+    }
+
     void check_position(double t, const mavlink_message_t& m) {
         mavlink_global_position_int_t p{};
         mavlink_msg_global_position_int_decode(&m, &p);
@@ -102,6 +159,7 @@ private:
             check_jump(*last_fix_, fix);
         }
         check_frozen(fix);
+        check_tracking(fix);
         last_fix_ = fix;
     }
 
@@ -151,6 +209,9 @@ private:
     std::optional<PositionFix> last_fix_;
     std::optional<PositionFix> frozen_since_;
     std::optional<double> first_offset_;
+    std::optional<double> offboard_since_;
+    std::optional<VelocityCommand> cmd_;
+    std::optional<double> tracking_bad_since_;
     std::deque<double> gaps_;
 };
 
@@ -176,18 +237,21 @@ std::vector<JournalRecord> read_journal(const std::string& path) {
 
 std::vector<AlarmEvent> detect(const std::vector<JournalRecord>& journal) {
     Detector d;
-    mavlink_message_t rx{};
-    mavlink_status_t st{};
+    mavlink_message_t rx[2]{};  // per direction: 0 = downlink, 1 = uplink
+    mavlink_status_t st[2]{};
     for (const JournalRecord& r : journal) {
-        if (r.dir != 0) {
-            continue;
-        }
+        const std::size_t dir = r.dir == 0 ? 0 : 1;
         const double t = static_cast<double>(r.t_ns) * 1e-9;
         for (const std::uint8_t b : r.bytes) {
             mavlink_message_t msg{};
             mavlink_status_t msg_st{};
-            const std::uint8_t res = mavlink_frame_char_buffer(&rx, &st, b, &msg, &msg_st);
-            if (res == MAVLINK_FRAMING_OK) {
+            const std::uint8_t res =
+                mavlink_frame_char_buffer(&rx[dir], &st[dir], b, &msg, &msg_st);
+            if (dir == 1) {
+                if (res == MAVLINK_FRAMING_OK) {
+                    d.on_uplink(t, msg);
+                }
+            } else if (res == MAVLINK_FRAMING_OK) {
                 d.on_downlink(t, msg);
             } else if (res == MAVLINK_FRAMING_BAD_CRC) {
                 d.on_crc_error(t);
@@ -211,6 +275,8 @@ const char* alarm_name(Alarm a) {
             return "position_jump";
         case Alarm::ClockDrift:
             return "clock_drift";
+        case Alarm::TrackingError:
+            return "tracking_error";
     }
     return "?";
 }

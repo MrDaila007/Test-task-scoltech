@@ -12,6 +12,9 @@
 //   FrozenPosition    position unchanged for 1 s while reported speed > 0.5 m/s
 //   PositionJump      position step not explained by velocity (> 2 m residual)
 //   ClockDrift        TIMESYNC offset moved by more than 5 ms from its first value
+//   TrackingError     in OFFBOARD, reported horizontal velocity differs from the
+//                     commanded one by more than 0.3 m/s for 1 s, once the same
+//                     velocity setpoint has been held for 2 s (the response settled)
 
 #include <cstdint>
 #include <string>
@@ -25,7 +28,8 @@ enum class Alarm {
     SequenceGap,
     FrozenPosition,
     PositionJump,
-    ClockDrift
+    ClockDrift,
+    TrackingError
 };
 
 struct AlarmEvent {

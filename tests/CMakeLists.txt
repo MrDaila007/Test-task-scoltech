@@ -16,6 +16,7 @@ add_executable(fcstub_tests
     unit/fc_core_test.cpp
     unit/sim_driver_test.cpp
     scenario/detectability_test.cpp
+    scenario/naive_detector_test.cpp
     support/naive_detector.cpp
 )
 target_link_libraries(fcstub_tests PRIVATE

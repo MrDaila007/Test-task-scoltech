@@ -110,6 +110,13 @@ TEST(Detectability, F1FrozenHoverIsNotDetectable) {
     EXPECT_TRUE(r.alarms.empty()) << describe(r.alarms);
 }
 
+TEST(Detectability, F1FrozenHoverIsCaughtByAnActiveProbe) {
+    const ScenarioRun r = run_scenario("f1_freeze_all_hover_probe");
+    const double t = first(r.alarms, Alarm::TrackingError);
+    EXPECT_GE(t, 26.0) << describe(r.alarms);  // probe at 24 s, 2 s settle + 1 s mismatch
+    EXPECT_LE(t, 27.5) << describe(r.alarms);
+}
+
 TEST(Detectability, F2RebootIsCaughtByHeartbeatLossAndTimeRegression) {
     const ScenarioRun r = run_scenario("f2_reboot");
     const double hb = first(r.alarms, Alarm::HeartbeatTimeout);

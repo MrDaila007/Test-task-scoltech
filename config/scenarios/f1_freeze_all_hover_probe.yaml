@@ -1,0 +1,14 @@
+# F1, worst case plus an active check: the estimate freezes during a hover, then the
+# onboard computer commands a 1 m/s move. The reported velocity stays at zero, so a
+# setpoint-tracking check catches the frozen estimate about 3 s after the probe
+# (2 s to let the response settle, then 1 s of mismatch).
+schema_version: 1
+run: {mode: sim, seed: 7, duration_s: 40}
+faults:
+  - {type: estimator_freeze, start_s: 20, duration_s: 10, freeze_velocity: true}
+client:
+  - {kind: command, at_s: 3, cmd: arm}
+  - {kind: setpoints, start_s: 3.5, end_s: 10, rate_hz: 20, frame: velocity, value: [0, 0, -1]}
+  - {kind: setpoints, start_s: 10, end_s: 24, rate_hz: 20, frame: velocity, value: [0, 0, 0]}
+  - {kind: setpoints, start_s: 24, end_s: 38, rate_hz: 20, frame: velocity, value: [1, 0, 0]}
+  - {kind: command, at_s: 4, cmd: offboard}
