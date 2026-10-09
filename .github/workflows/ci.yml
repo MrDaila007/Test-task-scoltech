@@ -3,8 +3,38 @@ name: CI
 on:
   push:
     branches: [main]
+    # Only changes that can affect the build or the tests start CI; documentation-only
+    # commits (docs/, *.md) do not. Run it by hand with workflow_dispatch.
+    paths:
+      - "src/**"
+      - "include/**"
+      - "tests/**"
+      - "config/**"
+      - "cmake/**"
+      - "CMakeLists.txt"
+      - "CMakePresets.json"
+      - "Makefile"
+      - "scripts/**"
+      - "docker/**"
+      - ".clang-format"
+      - ".github/workflows/ci.yml"
+      - ".github/actions/**"
   pull_request:
     branches: [main]
+    paths:  # same list as for push
+      - "src/**"
+      - "include/**"
+      - "tests/**"
+      - "config/**"
+      - "cmake/**"
+      - "CMakeLists.txt"
+      - "CMakePresets.json"
+      - "Makefile"
+      - "scripts/**"
+      - "docker/**"
+      - ".clang-format"
+      - ".github/workflows/ci.yml"
+      - ".github/actions/**"
   workflow_dispatch:
 
 permissions:

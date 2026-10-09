@@ -164,7 +164,7 @@
 
 ### CI/CD
 
-GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) запускается на push и pull request в `main`, вручную через `workflow_dispatch`. Команды те же, что локально. На общих раннерах тест джиттера исключён (`CTEST_EXTRA_ARGS="-LE timing"`).
+GitHub Actions ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) запускается на push и pull request в `main`, если менялись код, тесты, конфигурация, сборка или скрипты; правки только в `docs/` и `*.md` CI не запускают. Вручную его можно запустить через `workflow_dispatch`. Команды те же, что локально. На общих раннерах тест джиттера исключён (`CTEST_EXTRA_ARGS="-LE timing"`).
 
 | Задача | Что делает |
 |---|---|
