@@ -36,6 +36,19 @@
 ./scripts/build_and_test.sh            # конфигурация, сборка, все тесты (release)
 ```
 
+То же и остальное — через `make` ([`Makefile`](Makefile) — обёртка над скриптами; `make` без цели печатает список):
+
+| Команда | Что делает |
+|---|---|
+| `make build` / `make test` | сборка release / сборка и все тесты |
+| `make test-fast` | все тесты, кроме 5-секундного теста джиттера (для нагруженной машины) |
+| `make check` | cppcheck, clang-format, тесты, ASan + UBSan |
+| `make run` | реальное время по UDP; `CONFIG=…`, `DURATION=…`, `SEED=…` |
+| `make sim SCENARIO=f2_reboot` | один сценарий в модельном времени → `out/f2_reboot/` |
+| `make scenarios` / `make validate` | все сценарии с хэшами / проверка всех конфигураций по схеме |
+| `make mavsdk` | проверка настоящим MAVSDK (создаёт `.venv` при первом запуске) |
+| `make coverage`, `make verify`, `make jitter` | покрытие, чистые контейнеры (Docker), замер джиттера |
+
 Варианты: `./scripts/build_and_test.sh debug|asan|coverage`. Без сети можно собрать на системных пакетах: `cmake --preset release -DFCSTUB_USE_SYSTEM_DEPS=ON` (нужны `libyaml-cpp-dev`, `libgtest-dev`).
 
 | Зависимость | Версия |
@@ -281,6 +294,7 @@ git tag v0.1.0 && git push origin v0.1.0
 | Файл | Что делает |
 |---|---|
 | [`CMakeLists.txt`](CMakeLists.txt), [`CMakePresets.json`](CMakePresets.json), [`cmake/Dependencies.cmake`](cmake/Dependencies.cmake) | Сборка, пресеты `release`/`debug`/`asan`/`coverage`, зависимости с фиксированными версиями |
+| [`Makefile`](Makefile) | Короткие команды: сборка, тесты, запуск, сценарии, проверки (`make` — список) |
 | [`scripts/build_and_test.sh`](scripts/build_and_test.sh) | Сборка и все тесты одной командой |
 | [`scripts/quality.sh`](scripts/quality.sh), [`scripts/coverage.sh`](scripts/coverage.sh) | cppcheck и clang-format; покрытие с порогом 80 % |
 | [`scripts/verify_clean_machine.sh`](scripts/verify_clean_machine.sh), [`docker/Dockerfile`](docker/Dockerfile) | Сборка и тесты в чистых контейнерах, включая arm64 |
