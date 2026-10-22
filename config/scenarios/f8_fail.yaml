@@ -1,0 +1,11 @@
+# F8 battety voltage sen read fail.
+schema_version: 1
+run: {mode: sim, seed: 7, duration_s: 120}
+estimator: {pos_noise_m: 0.5, vel_noise_mps: 0.05, att_noise_rad: 0.01}  # EKF2-like, plain GNSS
+battery: {capacity_mah: 1500}
+faults:
+  - {type: battery, start_s: 20, duration_s: 10, battery_volt: 0.0}
+client:
+  - {kind: command, at_s: 3, cmd: arm}
+  - {kind: setpoints, start_s: 3.5, end_s: 118, rate_hz: 20, frame: velocity, value: [0, 0, -0.2]}
+  - {kind: command, at_s: 4, cmd: offboard}

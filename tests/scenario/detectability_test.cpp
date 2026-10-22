@@ -210,3 +210,9 @@ TEST(Detectability, OffboardLossIsNotAnUnexpectedModeChange) {
     const ScenarioRun r = run_scenario("clean");  // the stream ends at 58 s: HOLD by timeout
     EXPECT_LT(first(r.alarms, Alarm::UnexpectedMode), 0.0) << describe(r.alarms);
 }
+
+TEST(Detectability, F6VoltageSagIsCaughtUnderLoad) {
+    const ScenarioRun r = run_scenario("f8_fail");
+    const double t = first(r.alarms, Alarm::BatteryMismatch);
+    EXPECT_GE(t, 20.0) << describe(r.alarms);
+    EXPECT_LE(t, 26.0) << describe(r.alarms);
