@@ -141,6 +141,7 @@ struct GnssFaultParams {
 struct BatteryFaultParams {
     double capacity_factor = 1.0;  // real capacity / configured (aged or mis-set pack)
     double r_int_factor = 1.0;     // internal resistance multiplier (weak cell, bad joint)
+    double voltage = 
 };
 
 // F7: the autopilot leaves OFFBOARD on its own at the window start and refuses
@@ -148,9 +149,9 @@ struct BatteryFaultParams {
 enum class OverrideTarget { Hold, Manual };
 enum class OverrideCause { RcOverride, LowBattery, Geofence };
 
+// F8
 struct ModeOverrideParams {
-    OverrideTarget to = OverrideTarget::Hold;
-    OverrideCause cause = OverrideCause::RcOverride;
+    double battery 
 };
 
 using FaultParams =
