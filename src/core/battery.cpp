@@ -27,6 +27,9 @@ void Battery::step(double dt, bool armed, double speed_mps,
     true_soc_ = std::max(0.0, true_soc_ - used_mah / real_capacity);
     const double r_int = cfg_.r_int_ohm * (fault ? fault->r_int_factor : 1.0);
     voltage_ = cfg_.cells * (kCellEmptyV + kCellSpanV * true_soc_) - current_ * r_int;
+    if (fault && fault->battery_volt >= 0.0) {
+        voltage_ = fault->battery_volt;
+    }
 }
 
 }  // namespace fcstub

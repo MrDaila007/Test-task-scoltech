@@ -186,7 +186,7 @@ TEST(Dynamics, PositionLoopClosesOnTheEstimate) {
 // counted against the configured capacity, the voltage follows the real one.
 TEST(BatteryFault, LostCapacityDrainsTheRealChargeFaster) {
     fcstub::Battery bat({6, 10000.0, 0.02, 0.5, 18.0, 0.05, 1.0});
-    const fcstub::BatteryFaultParams aged{0.5, 1.0};
+    const fcstub::BatteryFaultParams aged{0.5, 1.0, -1.0};
     for (int i = 0; i < 250 * 600; ++i) {
         bat.step(kDt, true, 0.0, &aged);
     }
@@ -198,11 +198,23 @@ TEST(BatteryFault, LostCapacityDrainsTheRealChargeFaster) {
 TEST(BatteryFault, HighInternalResistanceSagsTheVoltageOnly) {
     fcstub::Battery healthy({6, 10000.0, 0.02, 0.5, 18.0, 0.05, 1.0});
     fcstub::Battery weak({6, 10000.0, 0.02, 0.5, 18.0, 0.05, 1.0});
-    const fcstub::BatteryFaultParams sag{1.0, 5.0};
+    const fcstub::BatteryFaultParams sag{1.0, 5.0, -1.0};
     healthy.step(kDt, true, 0.0);
     weak.step(kDt, true, 0.0, &sag);
     EXPECT_NEAR(healthy.voltage_v() - weak.voltage_v(), 18.0 * 0.02 * 4.0, 1e-9);
     EXPECT_DOUBLE_EQ(healthy.soc(), weak.soc());
+}
+
+TEST(BatteryFault, VoltageSensorReadsZeroWhileCurrentStays) {
+    fcstub::Battery healthy({6, 10000.0, 0.02, 0.5, 18.0, 0.05, 1.0});
+    fcstub::Battery dead_sense({6, 10000.0, 0.02, 0.5, 18.0, 0.05, 1.0});
+    const fcstub::BatteryFaultParams fail{1.0, 1.0, 0.0};
+    healthy.step(kDt, true, 0.0);
+    dead_sense.step(kDt, true, 0.0, &fail);
+    EXPECT_DOUBLE_EQ(dead_sense.voltage_v(), 0.0);
+    EXPECT_DOUBLE_EQ(dead_sense.current_a(), healthy.current_a());
+    EXPECT_DOUBLE_EQ(dead_sense.soc(), healthy.soc());
+    EXPECT_DOUBLE_EQ(dead_sense.true_soc(), healthy.true_soc());
 }
 
 // Without thrust (disarmed, autopilot rebooting, empty battery) the vehicle

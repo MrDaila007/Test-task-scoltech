@@ -211,8 +211,9 @@ TEST(Detectability, OffboardLossIsNotAnUnexpectedModeChange) {
     EXPECT_LT(first(r.alarms, Alarm::UnexpectedMode), 0.0) << describe(r.alarms);
 }
 
-TEST(Detectability, F6VoltageSagIsCaughtUnderLoad) {
+TEST(Detectability, F8VoltageSensorReadsZero) {
     const ScenarioRun r = run_scenario("f8_fail");
     const double t = first(r.alarms, Alarm::BatteryMismatch);
     EXPECT_GE(t, 20.0) << describe(r.alarms);
     EXPECT_LE(t, 26.0) << describe(r.alarms);
+}

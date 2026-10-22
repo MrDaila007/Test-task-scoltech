@@ -88,7 +88,7 @@ Config all_faults_config() {
                   make(FaultType::EstimatorFreeze, 20, 5, EstimatorFreezeParams{false}),
                   make(FaultType::ClockFault, 25, 10, clock),
                   make(FaultType::FcReboot, 40, 0, FcRebootParams{3000}),
-                  make(FaultType::Battery, 5, 0, BatteryFaultParams{0.5, 4.0}),
+                  make(FaultType::Battery, 5, 0, BatteryFaultParams{0.5, 4.0, -1.0}),
                   make(FaultType::ModeOverride, 15, 2,
                        ModeOverrideParams{OverrideTarget::Hold, OverrideCause::Geofence})};
     cfg.estimator = {0.5, 0.05, 0.01, 1.0};

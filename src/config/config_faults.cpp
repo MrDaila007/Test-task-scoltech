@@ -89,6 +89,7 @@ FaultParams parse_fault_params(FaultType type, Section& s, FaultSpec& spec) {
             BatteryFaultParams p;
             s.number("capacity_factor", p.capacity_factor, 0.05, 1.0);
             s.number("r_int_factor", p.r_int_factor, 1.0, 50.0);
+            s.number("battery_volt", p.battery_volt, 0.0, 60.0);
             return p;
         }
         case FaultType::ModeOverride: {
